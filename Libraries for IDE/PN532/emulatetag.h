@@ -16,17 +16,17 @@
 #define NDEF_MAX_LENGTH 128  // altough ndef can handle up to 0xfffe in size, arduino cannot.
 typedef enum {COMMAND_COMPLETE, TAG_NOT_FOUND, FUNCTION_NOT_SUPPORTED, MEMORY_FAILURE, END_OF_FILE_BEFORE_REACHED_LE_BYTES} responseCommand;
 
-class EmulateTag{
+class EmulateTag : public PN532{
 
 public:
-EmulateTag(PN532Interface &interface) : pn532(interface), uidPtr(0), tagWrittenByInitiator(false), tagWriteable(true), updateNdefCallback(0) { }
-  
+EmulateTag(PN532Interface &interface) : PN532(interface), uidPtr(0), tagWrittenByInitiator(false), tagWriteable(true), updateNdefCallback(0) { }
+
   bool init();
 
   bool emulate(const uint16_t tgInitAsTargetTimeout = 0);
 
   /*
-   * @param uid pointer to byte array of length 3 (uid is 4 bytes - first byte is fixed) or zero for uid 
+   * @param uid pointer to byte array of length 3 (uid is 4 bytes - first byte is fixed) or zero for uid
    */
   void setUid(uint8_t* uid = 0);
 
@@ -58,7 +58,6 @@ EmulateTag(PN532Interface &interface) : pn532(interface), uidPtr(0), tagWrittenB
   };
 
 private:
-  PN532 pn532;
   uint8_t ndef_file[NDEF_MAX_LENGTH];
   uint8_t* uidPtr;
   bool tagWrittenByInitiator;
