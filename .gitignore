@@ -1,9 +1,0 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-/Bracelet_Arduino/.vs/Bracelet_Arduino/v14
-/Bracelet_Arduino/Debug
-/Bracelet_Arduino/__vm
-/Bracelet_Arduino/Bracelet_Arduino.vcxproj.filters
-/Bracelet_Arduino/Bracelet_Arduino.vcxproj
-/Bracelet_Arduino/Bracelet_Arduino.sln
