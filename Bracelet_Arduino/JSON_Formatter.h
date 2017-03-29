@@ -3,18 +3,10 @@
 #ifndef _JSON_FORMATTER_h
 #define _JSON_FORMATTER_h
 
-/*
-#if defined(ARDUINO) && ARDUINO >= 100
-	#include "arduino.h"
-#else
-	#include "WProgram.h"
-#endif
-*/
-
 #include <ArduinoJson.h>
 #include "NFC_Tags_Container.h"
 
-static constexpr int BUFFER_SIZE=200;
+static constexpr int BUFFER_SIZE = 200;
 
 class JSON_Formatter {
 private:

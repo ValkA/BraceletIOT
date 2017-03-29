@@ -4,17 +4,18 @@
  Author:	Michael
 */
 
-#include "NFC_Tags_Container.h"
-#include "Known_Tags_Container.h"
-#include "JSON_Formatter.h"
+#include <MemoryFree.h>
 #include <Wire.h>
+
 #include "SPI.h"
 #include "PN532.h"
 #include "PN532_SPI.h"
-#include "emulatetag.h"
-#include <MemoryFree.h>
-#include "NFCPairingProtocol.h"
 
+#include "emulatetag.h"
+#include "NFC_Tags_Container.h"
+#include "Known_Tags_Container.h"
+#include "NFCPairingProtocol.h"
+#include "JSON_Formatter.h"
 
 PN532_SPI pn532spi(SPI, 10);
 EmulateTag nfc(pn532spi);
@@ -25,50 +26,57 @@ static constexpr int NFC_READ_TIMEOUT = 1000; //in ms.
 static constexpr int NFC_PAIR_TIMEOUT = 5000; //in ms.
 
 NFC_Tags_Container tags_cont;
+Known_Tags_Container known_tags;
 
 void setup(void) {
-  //serial setup
+	//serial setup
 	Serial.begin(115200);
 	Serial.println(F("Starting"));
 	pinMode(LED_BUILTIN, OUTPUT);
 
-  //nfc setup
-  nfc.setNdefFile(bluetoothPairNFCMessage, sizeof(bluetoothPairNFCMessage));
-  nfc.setUid(emulatedUID);
-  nfc.init();
-  uint32_t versiondata = nfc.getFirmwareVersion();
-  if (!versiondata) {
-    Serial.print(F("Didn't find PN53x board"));
-    while (1); // halt
-  }
+	//nfc setup
+	nfc.setNdefFile(bluetoothPairNFCMessage, sizeof(bluetoothPairNFCMessage));
+	nfc.setUid(emulatedUID);
+	nfc.init();
+	uint32_t versiondata = nfc.getFirmwareVersion();
+	if (!versiondata) {
+		Serial.print(F("Didn't find PN53x board"));
+		while (1); // halt
+	}
 }
 
 void loop(void) {
-    tryToPairViaNFC(2000);
-    readTag(0);
+	readTag(0);
 }
 
-void readTag(uint16_t timeout){
-  Serial.println(F("Waiting for an ISO14443A Card ..."));
-  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-  uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-  uint8_t success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, timeout);
-    if (success) {
-      Serial.println(F("Found an ISO14443A card"));
-      tags_cont.tags.push_back(Tag_Data(uid));
-      //nfc.PrintHex(uid, uidLength);
-      // For testing:
-      Serial.println(F("All saved tags:"));
-      //Serial.println(tags_cont.toString()); //doesnt work. Gets corrupted when String too long.
-      tags_cont.print();
-      Serial.println(F("Memory Left:"));
-      Serial.println(freeMemory());
-	  delay(NFC_READ_TIMEOUT);
-    }
+void readTag(uint16_t timeout) {
+	Serial.println(F("Waiting for an ISO14443A Card ..."));
+	uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+	uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+	uint8_t success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength, timeout);
+	if (success) {
+		if (known_tags.isKnownTag(uid)) {
+			//Serial.println(F("Found an ISO14443A card"));
+			Serial.println(F("Found a known tag."));
+			tags_cont.tags.push_back(Tag_Data(uid));
+			//nfc.PrintHex(uid, uidLength);
+			//For testing:
+			Serial.println(F("All saved tags:"));
+			//Serial.println(tags_cont.toString()); //doesnt work. Gets corrupted when String too long.
+			tags_cont.print();
+			Serial.println(F("Memory Left:"));
+			Serial.println(freeMemory());
+			delay(NFC_READ_TIMEOUT);
+		}
+		else {
+			Serial.println(F("Found an unknown tag."));
+			tryToPairViaNFC(NFC_PAIR_TIMEOUT);
+		}
+	}
 }
 
-void tryToPairViaNFC(uint16_t timeout){
-  Serial.println(F("changing to pair state"));
-  nfc.init();//dont know why, but doesnt work without that here..
-  nfc.emulate(timeout);
+void tryToPairViaNFC(uint16_t timeout) {
+	Serial.println(F("changing to pair state"));
+	nfc.init();//dont know why, but doesnt work without that here..
+	nfc.emulate(timeout);
 }
