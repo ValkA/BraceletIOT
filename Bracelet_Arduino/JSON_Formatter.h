@@ -1,7 +1,7 @@
-// JSON_Container.h
+// JSON_Formatter.h
 
-#ifndef _JSON_CONTAINER_h
-#define _JSON_CONTAINER_h
+#ifndef _JSON_FORMATTER_h
+#define _JSON_FORMATTER_h
 
 /*
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -16,13 +16,13 @@
 
 static constexpr int BUFFER_SIZE=200;
 
-class JSON_Container {
+class JSON_Formatter {
 private:
 	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
 	const uint8_t bluetoothOutputPin;
 	const uint8_t bluetoothInputPin;
 public:
-	JSON_Container(uint8_t bluetoothOutputPin, uint8_t bluetoothInputPin)
+	JSON_Formatter(uint8_t bluetoothOutputPin, uint8_t bluetoothInputPin)
 		: bluetoothOutputPin(bluetoothOutputPin), bluetoothInputPin(bluetoothInputPin) {};
 	void insertTagsIntoBuffer(const NFC_Tags_Container& cont) {
 		//todo: implement

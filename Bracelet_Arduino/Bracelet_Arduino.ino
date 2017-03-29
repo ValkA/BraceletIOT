@@ -4,6 +4,7 @@
  Author:	Michael
 */
 
+#include "Known_Tags_Container.h"
 #include "JSON_Container.h"
 #include <Wire.h>
 #include "SPI.h"
@@ -20,6 +21,9 @@ PN532_SPI pn532spi(SPI, 10);
 EmulateTag nfc(pn532spi);
 uint8_t emulatedUID[3] = { 0x12, 0x34, 0x56 };  //this is the UID of the emulated tag (that holds the message above for pairing)
 uint8_t bluetoothPairNFCMessage[] = BLUETOOTH_PAIR_NFC_MESSAGE;
+
+static constexpr int NFC_READ_TIMEOUT = 1000; //in ms.
+static constexpr int NFC_PAIR_TIMEOUT = 5000; //in ms.
 
 NFC_Tags_Container tags_cont;
 
@@ -42,7 +46,7 @@ void setup(void) {
 
 void loop(void) {
     tryToPairViaNFC(2000);
-    readTag(2000);
+    readTag(0);
 }
 
 void readTag(uint16_t timeout){
@@ -60,6 +64,7 @@ void readTag(uint16_t timeout){
       tags_cont.print();
       Serial.println(F("Memory Left:"));
       Serial.println(freeMemory());
+	  delay(NFC_READ_TIMEOUT);
     }
 }
 
