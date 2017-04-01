@@ -1,5 +1,5 @@
-#ifndef _Bluetooth_Communication_
-#define _Bluetooth_Communication_
+#ifndef _json_Formatter_
+#define _json_Formatter_
 
 #include <ArduinoJson.h>
 #include <ArduinoSTL.h>

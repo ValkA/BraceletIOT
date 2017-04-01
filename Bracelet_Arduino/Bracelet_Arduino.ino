@@ -15,7 +15,7 @@
 #include "NFC_Tags_Container.h"
 #include "Known_Tags_Container.h"
 #include "NFCPairingProtocol.h"
-#include "bluetoothCommunication.h"
+#include "jsonFormatter.h"
 #include <SoftwareSerial.h>
 
 PN532_SPI pn532spi(SPI, 10);
