@@ -15,7 +15,8 @@
 #include "NFC_Tags_Container.h"
 #include "Known_Tags_Container.h"
 #include "NFCPairingProtocol.h"
-#include "JSON_Formatter.h"
+#include "bluetoothCommunication.h"
+#include <SoftwareSerial.h>
 
 PN532_SPI pn532spi(SPI, 10);
 EmulateTag nfc(pn532spi);
@@ -27,10 +28,14 @@ static constexpr int NFC_PAIR_TIMEOUT = 5000; //in ms.
 
 NFC_Tags_Container tags_cont;
 Known_Tags_Container known_tags;
+BluetoothCommunication bluetoothObject;
+
+//SoftwareSerial bluetoothSerial(6,7);
 
 void setup(void) {
 	//serial setup
 	Serial.begin(115200);
+  //bluetoothSerial.begin(115200);
 	Serial.println(F("Starting"));
 	pinMode(LED_BUILTIN, OUTPUT);
 
@@ -47,6 +52,16 @@ void setup(void) {
 
 void loop(void) {
 	readTag(0);
+//************Begin: *For debug- I didnt have tags to scan... if you use it, put the other rows in loop in comment.
+// Tag_Data x = Tag_Data(1);
+// tags_cont.tags.push_back(x);
+// Tag_Data y = Tag_Data(2);
+// tags_cont.tags.push_back(y);
+// Tag_Data t = Tag_Data(33);
+// tags_cont.tags.push_back(t);
+// bluetoothObject.insertTagsIntoBuffer(tags_cont);
+// bluetoothObject.getJsonArray().prettyPrintTo(Serial);
+//*************End: For debug
 }
 
 void readTag(uint16_t timeout) {
@@ -63,7 +78,8 @@ void readTag(uint16_t timeout) {
 			//For testing:
 			Serial.println(F("All saved tags:"));
 			//Serial.println(tags_cont.toString()); //doesnt work. Gets corrupted when String too long.
-			tags_cont.print();
+			//tags_cont.print();
+			bluetoothObject.insertTagsIntoBuffer(tags_cont);
 			Serial.println(F("Memory Left:"));
 			Serial.println(freeMemory());
 			delay(NFC_READ_TIMEOUT);
