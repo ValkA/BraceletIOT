@@ -22,14 +22,14 @@ public:
 	void print() { //Just for testing
 		//String s;
 		for (auto td : tags) {
-			String id;
-			char buffer[10] = { 0 };
+        Serial.print("uid ");
 			for (int i = 0; i < 7; i++) {
-				itoa(td.uid[i], buffer, 16);
-				id = id + String(buffer) + ' ';
+        Serial.print("0x");
+        Serial.print(td.uid[i], HEX);
+        Serial.print(' ');
 			}
-			//s = s + id + "," + td.timestamp + "\n";
-			Serial.println(id + "," + td.timestamp);
+			Serial.print(", timestamp ");
+			Serial.println(td.timestamp);
 		}
 		//return s;
 	}
