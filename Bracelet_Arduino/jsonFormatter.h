@@ -2,20 +2,20 @@
 #define _json_Formatter_
 
 #include <ArduinoJson.h>
-#include <ArduinoSTL.h>
 #include <Arduino.h>
 #include "NFC_Tags_Container.h"
-#include <list>
 
 
 static constexpr int BUFFER_SIZE = 200;
 
-class BluetoothCommunication {
+class JSON_Formatter {
 private:
 	StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
-  JsonArray& root = jsonBuffer.createArray();
+	JsonArray& root = jsonBuffer.createArray();
 public:
-
+	int getFreeMem() {
+		return BUFFER_SIZE - jsonBuffer.size();
+	}
 	void insertTagIntoBuffer(const Tag_Data& td) {     
         JsonObject& jObject = jsonBuffer.createObject();
         char hexid[21];
@@ -27,9 +27,9 @@ public:
         }
         hexid[20] = 0;
         jObject["uid"] = String(hexid);
-        jObject["timestamp"] = td.timestamp;
-        root.add(jObject);    
-        Serial.println(jsonBuffer.size());
+        //jObject["timestamp"] = td.timestamp; //maybe should change "timestamp" to something shorter to conserve memory:
+		jObject["ts"] = td.timestamp;
+        root.add(jObject);
 	}
 
   JsonArray& getJsonArray() {

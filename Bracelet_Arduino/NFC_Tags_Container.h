@@ -22,11 +22,11 @@ public:
 	void print() { //Just for testing
 		//String s;
 		for (auto td : tags) {
-        Serial.print("uid ");
+			Serial.print("uid ");
 			for (int i = 0; i < 7; i++) {
-        Serial.print("0x");
-        Serial.print(td.uid[i], HEX);
-        Serial.print(' ');
+				Serial.print("0x");
+				Serial.print(td.uid[i], HEX);
+				Serial.print(' ');
 			}
 			Serial.print(", timestamp ");
 			Serial.println(td.timestamp);
