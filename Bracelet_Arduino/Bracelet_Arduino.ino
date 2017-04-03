@@ -24,10 +24,10 @@ uint8_t emulatedUID[3] = { 0x12, 0x34, 0x56 };  //this is the UID of the emulate
 uint8_t bluetoothPairNFCMessage[] = BLUETOOTH_PAIR_NFC_MESSAGE;
 
 static constexpr int NFC_READ_TIMEOUT = 1000; //in ms.
-static constexpr int NFC_PAIR_TIMEOUT = 3000; //in ms.
+static constexpr int NFC_PAIR_TIMEOUT = 7000; //in ms.
 static constexpr int BT_DATA_SEND_TIMEOUT = 60000; //in ms (one minute, probably too long).
 
-//NFC_Tags_Container tags_cont;
+NFC_Tags_Container tags_cont;
 Known_Tags_Container known_tags;
 JSON_Formatter jsonFormatterObject;
 
@@ -67,14 +67,13 @@ void readTag(uint16_t timeout) {
 		Serial.print(F("Found known tag:"));
 		Serial.println();
 		nfc.PrintHex(uid, uidLength);
-		//tags_cont.tags.push_back(Tag_Data(uid));//seems useless ?
-		//tags_cont.print();
-		jsonFormatterObject.insertTagIntoBuffer(Tag_Data(uid));
+		tags_cont.tags.push_back(Tag_Data(uid));//seems useless ?
+		//jsonFormatterObject.insertTagIntoBuffer(Tag_Data(uid));
 		//Serial.println(F("Memory Left:")); //doesnt change if all tags are in the JSON buffer.
 		//Serial.println(freeMemory());
 		sendDataBT();
-		Serial.println(F("Memory left in JSON formatter:"));
-		Serial.println(jsonFormatterObject.getFreeMem());
+//		Serial.println(F("Memory left in JSON formatter:"));
+//		Serial.println(jsonFormatterObject.getFreeMem());
 		delay(NFC_READ_TIMEOUT);
 	}
 	else {
@@ -87,16 +86,17 @@ void readTag(uint16_t timeout) {
 
 void sendDataBT() {
 	Serial.println(F("Sending over BT:"));
-	jsonFormatterObject.getJsonArray().prettyPrintTo(Serial);
+	tags_cont.print();
 	Serial.println();
-	jsonFormatterObject.getJsonArray().printTo(bluetoothSerial);
-	bluetoothSerial.println('#');
+	tags_cont.sendJsonToSerial(bluetoothSerial);
+	bluetoothSerial.print('#');
 }
 
 void tryToPairViaNFC(uint16_t timeout) {
 	Serial.println(F("changing to pair state"));
 	nfc.init();//dont know why, but doesnt work without that here..
 	nfc.emulate(timeout);
+ Serial.println(F("waiting for #"));
 
 	unsigned long temp = millis();
 	while (!bluetoothSerial.available()) { //waiting for some data to be sent from the phone to make sure there is a connection.
