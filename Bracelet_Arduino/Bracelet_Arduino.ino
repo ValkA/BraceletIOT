@@ -84,7 +84,7 @@ void sendDataBT() {
 	tags_cont.print(Serial);
 	Serial.println();
   tags_cont.print(bluetoothSerial);
-	bluetoothSerial.println('#');
+	bluetoothSerial.print('#');
 }
 
 void tryToPairViaNFC(uint16_t timeout) {
