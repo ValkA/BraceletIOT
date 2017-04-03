@@ -13,10 +13,9 @@
 #include "PN532_SPI.h"
 
 #include "emulatetag.h"
-//#include "NFC_Tags_Container.h"
+#include "NFC_Tags_Container.h"
 #include "Known_Tags_Container.h"
 #include "NFCPairingProtocol.h"
-#include "jsonFormatter.h"
 
 PN532_SPI pn532spi(SPI, 10);
 EmulateTag nfc(pn532spi);
@@ -29,7 +28,6 @@ static constexpr int BT_DATA_SEND_TIMEOUT = 60000; //in ms (one minute, probably
 
 NFC_Tags_Container tags_cont;
 Known_Tags_Container known_tags;
-JSON_Formatter jsonFormatterObject;
 
 static constexpr int RX = 2; //On nano: white
 static constexpr int TX = 3; //On nano: grey
@@ -68,12 +66,9 @@ void readTag(uint16_t timeout) {
 		Serial.println();
 		nfc.PrintHex(uid, uidLength);
 		tags_cont.tags.push_back(Tag_Data(uid));//seems useless ?
-		//jsonFormatterObject.insertTagIntoBuffer(Tag_Data(uid));
-		//Serial.println(F("Memory Left:")); //doesnt change if all tags are in the JSON buffer.
-		//Serial.println(freeMemory());
+		Serial.println(F("Memory Left:")); //doesnt change if all tags are in the JSON buffer.
+		Serial.println(freeMemory());
 		sendDataBT();
-//		Serial.println(F("Memory left in JSON formatter:"));
-//		Serial.println(jsonFormatterObject.getFreeMem());
 		delay(NFC_READ_TIMEOUT);
 	}
 	else {
@@ -86,10 +81,10 @@ void readTag(uint16_t timeout) {
 
 void sendDataBT() {
 	Serial.println(F("Sending over BT:"));
-	tags_cont.print();
+	tags_cont.print(Serial);
 	Serial.println();
-	tags_cont.sendJsonToSerial(bluetoothSerial);
-	bluetoothSerial.print('#');
+  tags_cont.print(bluetoothSerial);
+	bluetoothSerial.println('#');
 }
 
 void tryToPairViaNFC(uint16_t timeout) {
