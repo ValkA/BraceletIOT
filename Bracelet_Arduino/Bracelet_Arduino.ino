@@ -24,7 +24,7 @@ uint8_t bluetoothPairNFCMessage[] = BLUETOOTH_PAIR_NFC_MESSAGE;
 
 static constexpr int NFC_READ_TIMEOUT = 1000; //in ms.
 static constexpr int NFC_PAIR_TIMEOUT = 7000; //in ms.
-static constexpr int BT_DATA_SEND_TIMEOUT = 60000; //in ms (one minute, probably too long).
+static constexpr int BT_DATA_SEND_TIMEOUT = 30000; //in ms.
 
 NFC_Tags_Container tags_cont;
 Known_Tags_Container known_tags;
@@ -65,8 +65,8 @@ void readTag(uint16_t timeout) {
 		Serial.print(F("Found known tag:"));
 		Serial.println();
 		nfc.PrintHex(uid, uidLength);
-		tags_cont.tags.push_back(Tag_Data(uid));//seems useless ?
-		Serial.println(F("Memory Left:")); //doesnt change if all tags are in the JSON buffer.
+		tags_cont.tags.push_back(Tag_Data(uid));
+		Serial.println(F("Memory Left:"));
 		Serial.println(freeMemory());
 		sendDataBT();
 		delay(NFC_READ_TIMEOUT);
@@ -81,24 +81,27 @@ void readTag(uint16_t timeout) {
 
 void sendDataBT() {
 	Serial.println(F("Sending over BT:"));
-	tags_cont.print(Serial);
+	tags_cont.printJSON(Serial);
 	Serial.println();
-  tags_cont.print(bluetoothSerial);
-	bluetoothSerial.print('#');
+	tags_cont.printJSON(bluetoothSerial);
+	bluetoothSerial.println('#');
 }
 
 void tryToPairViaNFC(uint16_t timeout) {
 	Serial.println(F("changing to pair state"));
 	nfc.init();//dont know why, but doesnt work without that here..
 	nfc.emulate(timeout);
- Serial.println(F("waiting for #"));
 
+	Serial.println(F("waiting for #"));
 	unsigned long temp = millis();
 	while (!bluetoothSerial.available()) { //waiting for some data to be sent from the phone to make sure there is a connection.
 		if (millis() - temp > BT_DATA_SEND_TIMEOUT) {
-			Serial.println(F("Timeout! Didnt get data from BT!"));
+			Serial.println(F("Timeout! Didnt get #!"));
 			break;
 		}
+	}
+	if (bluetoothSerial.available()) {
+		Serial.print(F("Got #"));
 	}
 	while (bluetoothSerial.available()) { //clearing the buffer.
 		bluetoothSerial.read();
