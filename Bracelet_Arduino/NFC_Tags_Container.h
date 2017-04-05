@@ -25,7 +25,7 @@ public:
 		int count = tags.size();
 		int i = 1;
 		for (auto td : tags) {
-			stream.print("{\"uid\":\"");
+			stream.print(F("{\"uid\":\""));
 			char hexid[21] = { 0 };
 			for (int i = 0; i < 7; i++) {
 				if (td.uid[i] <= 0x0F) {
@@ -41,7 +41,7 @@ public:
 			hexid[20] = 0;
 			stream.print(hexid);
 
-			stream.print("\",\"ts\":");
+			stream.print(F("\",\"ts\":"));
 			stream.print(td.timestamp);
 			stream.print('}');
 			if (i++ != count) stream.print(',');

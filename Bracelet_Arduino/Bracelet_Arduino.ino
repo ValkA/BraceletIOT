@@ -51,11 +51,22 @@ void setup(void) {
 }
 
 void loop(void) {
-	readTag(0);//0 = infinity timeout
+	readTag(500);//0 = infinity timeout
+
+	//checking if pairing is finished, and phone sent '#':
+	//in the future, we should add a flag that we are waiting for pair
+	//right now it's not neccessary since the phone never sends anything other than pair auth.
+	if (bluetoothSerial.available()) {
+		Serial.print(F("Got #"));
+	}
+	while (bluetoothSerial.available()) { //clearing the BT buffer.
+		bluetoothSerial.read();
+	}
+	sendDataBT();
 }
 
 void readTag(uint16_t timeout) {
-	Serial.println(F("Waiting for an ISO14443A Card ..."));
+	//Serial.println(F("Waiting for an ISO14443A Card ..."));
 
 	uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
 	uint8_t uidLength;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
@@ -84,14 +95,15 @@ void sendDataBT() {
 	tags_cont.printJSON(Serial);
 	Serial.println();
 	tags_cont.printJSON(bluetoothSerial);
-	bluetoothSerial.println('#');
+	bluetoothSerial.println('#'); //printing "ln" causes the phone app to crash!
 }
 
 void tryToPairViaNFC(uint16_t timeout) {
 	Serial.println(F("changing to pair state"));
 	nfc.init();//dont know why, but doesnt work without that here..
 	nfc.emulate(timeout);
-
+	
+	/* removed because we'll try dynamic pairing instead.
 	Serial.println(F("waiting for #"));
 	unsigned long temp = millis();
 	while (!bluetoothSerial.available()) { //waiting for some data to be sent from the phone to make sure there is a connection.
@@ -107,4 +119,5 @@ void tryToPairViaNFC(uint16_t timeout) {
 		bluetoothSerial.read();
 	}
 	sendDataBT();
+	*/
 }
