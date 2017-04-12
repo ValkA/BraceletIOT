@@ -31,11 +31,13 @@ Known_Tags_Container known_tags;
 
 static constexpr int RX = 2; //On nano: white
 static constexpr int TX = 3; //On nano: grey
-SoftwareSerial bluetoothSerial(RX, TX); //2 violet, 3 blue
+SoftwareSerial bluetoothSerial(RX, TX); //On UNO: 2 violet, 3 blue
 
 void setup(void) {
 	Serial.begin(115200);
-	Serial.println(F("Starting"));
+	Serial.println(F("Starting..."));
+	Serial.println(F("Memory Left:"));
+	Serial.println(freeMemory());
 
 	bluetoothSerial.begin(9600);
 	//bluetoothSerial.println(F("Starting"));
@@ -58,11 +60,11 @@ void loop(void) {
 	//right now it's not neccessary since the phone never sends anything other than pair auth.
 	if (bluetoothSerial.available()) {
 		Serial.print(F("Got #"));
+		sendDataBT();
 	}
 	while (bluetoothSerial.available()) { //clearing the BT buffer.
 		bluetoothSerial.read();
 	}
-	sendDataBT();
 }
 
 void readTag(uint16_t timeout) {
@@ -76,7 +78,7 @@ void readTag(uint16_t timeout) {
 		Serial.print(F("Found known tag:"));
 		Serial.println();
 		nfc.PrintHex(uid, uidLength);
-		tags_cont.tags.push_back(Tag_Data(uid));
+		tags_cont.add(uid);
 		Serial.println(F("Memory Left:"));
 		Serial.println(freeMemory());
 		sendDataBT();
