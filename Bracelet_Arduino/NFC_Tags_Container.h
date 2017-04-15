@@ -73,10 +73,11 @@ public:
 			hexid[20] = 0;
 			stream.print(hexid);
 
-			stream.print(F("\",\"ts\":"));
+			stream.print(F("\",\"ts\":\""));
 			stream.print(td.timestamp.time);
-			stream.print(F("\",\"tsid\":"));
+			stream.print(F("\",\"tsid\":\""));
 			stream.print(td.timestamp.id);
+			stream.print(F("\""));
 			stream.print('}');
 			if (i++ != count) stream.print(',');
 		}
