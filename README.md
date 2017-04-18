@@ -1,7 +1,7 @@
 # BraceletIOT
 
 Wiring:
-![alt tag](http://tinypic.com/r/20hk84w/9)
+![alt tag](http://s27.postimg.org/88akck9mb/bracelet_bb.png)
 
 IDE:
 1. Don't forget to include libraries from "Libraries for IDE" folder
