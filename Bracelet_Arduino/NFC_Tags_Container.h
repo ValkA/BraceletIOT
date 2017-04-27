@@ -4,8 +4,10 @@
 #define _NFC_TAGS_CONTAINER_h
 
 #include <Arduino.h>
-#include <ArduinoSTL.h>
-#include <list>
+//#include <ArduinoSTL.h>
+//#include <list>
+
+static constexpr int CONTAINER_SIZE = 100;
 
 //bit field consts:
 static constexpr int TS_TIME_BITS = 11;
@@ -13,7 +15,7 @@ static constexpr int TS_ID_BITS = 3;
 static constexpr int TYPE_BITS = 4;
 static constexpr int TAG_DATA_BITS = 16;
 
-struct Timestamp{
+struct Timestamp {
 	unsigned int time : TS_TIME_BITS; //stored in one minute intervals.
 	unsigned int id : TS_ID_BITS; //in case several tags get scanned in the same minute.
 };
@@ -37,6 +39,8 @@ public:
 		this->type = type;
 		this->data.tagData = data;
 	}
+	Tag_Data() {}; //This is needed to create the tags array.
+
 	// we dont save uid's anymore.
 	//uint8_t uid[7];
 	//Tag_Data(uint8_t uid[]){
@@ -49,12 +53,28 @@ public:
 
 class NFC_Tags_Container {
 private:
-	std::list<Tag_Data> tags;
+	Tag_Data tags[CONTAINER_SIZE];
+	uint16_t size = 0;
+	void printTag(Stream & stream, const Tag_Data & td) const
+	{
+		stream.print(F("{\"data\":\""));
+		stream.print(td.data.tagData);
+		stream.print(F("\",\"ts\":\""));
+		stream.print(td.timestamp.time);
+		stream.print(F("\",\"tsid\":\""));
+		stream.print(td.timestamp.id);
+		stream.print(F("\""));
+		stream.print('}');
+	}
 public:
 	void add(Data_Type type, uint32_t data) {
+		if (size == CONTAINER_SIZE - 1) {
+			Serial.print(F("ERROR: OUT OF MEMORY!"));
+			return;
+		}
 		Tag_Data newTag = Tag_Data(type, data);
-		if (tags.size() > 0) {
-			const Tag_Data& last = tags.back();
+		if (size > 0) {
+			const Tag_Data& last = tags[size - 1];
 			if (last.timestamp.time >= newTag.timestamp.time) {
 				//if max number of tags (max val of timestamp.id) added this minute, we add to next minute
 				if (last.timestamp.id < pow(2, TS_ID_BITS) - 1) {
@@ -66,28 +86,20 @@ public:
 				}
 			}
 		}
-		tags.push_back(newTag);
+		tags[size] = newTag;
+		size++;
 	}
-	void printJSON(Stream& stream) const{
+	void printJSON(Stream& stream) const {
 		stream.print('[');
-		int count = tags.size();
-		int i = 1;
-		for (auto td : tags) {
-			//printUID(stream, td);
-			stream.print(F("{\"data\":\""));
-			stream.print(td.data.tagData);
-			stream.print(F("\",\"ts\":\""));
-			stream.print(td.timestamp.time);
-			stream.print(F("\",\"tsid\":\""));
-			stream.print(td.timestamp.id);
-			stream.print(F("\""));
-			stream.print('}');
-			if (i++ != count) stream.print(',');
+		for (int i = 0; i < size; i++) {
+			const Tag_Data& td = tags[i];
+			printTag(stream, td);
+			if (i != size - 1) stream.print(',');
 		}
 		stream.print("]");
 	}
 	int getSize() {
-		return tags.size();
+		return size;
 	}
 };
 

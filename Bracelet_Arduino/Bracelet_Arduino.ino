@@ -70,7 +70,7 @@ void loop(void) {
 
 void readTag(uint16_t timeout) {
 	if (nfc.tagPresent(timeout)) {
-		Serial.println(F("Found tag"));
+		Serial.print(F("Found tag: "));
 		NfcTag tag = nfc.read();
 		if (!tag.hasNdefMessage()) {
 			Serial.println(F("ERROR: No NDEF message!"));
@@ -85,23 +85,23 @@ void readTag(uint16_t timeout) {
 				Serial.println(F("ERROR: No record!"));
 			}
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
-			uint8_t payloadLength = record.getPayloadLength();
+			uint8_t payloadLength = record.getPayloadLength(); //todo: probably should add some check here that payloadLength isnt too large.
 			byte payload[payloadLength];
 			record.getPayload(payload);
 
 			uint16_t message_data = atoi((char*)payload);
-			Serial.println(F("Message: "));
+			Serial.println(F("message: "));
 			Serial.println(message_data);
 
 			tags_cont.add(type_tag_data, message_data);
 			sendDataBT();
-			Serial.println(F("Memory Left:"));
+			Serial.print(F("Memory Left: "));
 			Serial.println(freeMemory());
-			Serial.println(F("DB size:"));
+			Serial.print(F("DB size: "));
 			Serial.println(tags_cont.getSize());
-			
+
 			delay(NFC_READ_TIMEOUT);
-			
+
 			/*
 			// Can be used for debugging:
 			// Force the data into a String (might work depending on the content)
@@ -122,7 +122,7 @@ void sendDataBT() {
 	tags_cont.printJSON(Serial);
 	Serial.println();
 	tags_cont.printJSON(bluetoothSerial);
-	bluetoothSerial.println('#'); //printing "ln" causes the phone app to crash!
+	bluetoothSerial.println('#');
 }
 
 //void tryToPairViaNFC(uint16_t timeout) {
