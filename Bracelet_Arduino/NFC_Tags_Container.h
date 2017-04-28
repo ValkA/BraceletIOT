@@ -14,51 +14,85 @@ static constexpr int TS_TIME_BITS = 11;
 static constexpr int TS_ID_BITS = 3;
 static constexpr int TYPE_BITS = 4;
 static constexpr int TAG_DATA_BITS = 16;
+static constexpr int LOCATION_FIELD_BITS = 28; //TODO: check how many bits it takes
+static constexpr int DEFAULT_DATA_BITS = 28;
 
 struct Timestamp {
 	unsigned int time : TS_TIME_BITS; //stored in one minute intervals.
 	unsigned int id : TS_ID_BITS; //in case several tags get scanned in the same minute.
 };
 
-enum Data_Type { type_tag_data }; //todo: add more data types.
+enum Data_Type { 
+		tag_scan,
+		mobile_device_id,
+		app_new_data,
+		app_update_data,
+		app_headquarter_communication,
+		blood_pressure,
+		app_command,
+		app_soldier_status,
+		app_location,
+		custom	
+	};
 
-union Data
-{
-	unsigned int tagData : TAG_DATA_BITS; //type = type_tag_data
-	//todo: add more data types.
+	
+//class Location {
+//
+//		unsigned int latitude : LOCATION_FIELD_BITS;
+//		unsigned int longitude : LOCATION_FIELD_BITS;
+//
+//    Location() {};
+//		Location(unsigned int latitude , unsigned int longitude) {
+//			this->latitude = latitude;
+//			this->longitude = longitude;
+//		}
+//		
+//		unsigned int locationGetLatitude() {
+//			return this->latitude;
+//		}
+//		unsigned int locationGetLongitude() {
+//			return this->latitude;
+//		}
+//		unsigned int locationUpdateLatitude() {
+//			return this->latitude;
+//		}
+//		unsigned int locationUpdateLongitude() {
+//			return this->latitude;
+//		}
+//};
+
+union Data {
+	unsigned int tagId : TAG_DATA_BITS;
+	unsigned int mobileIdData : DEFAULT_DATA_BITS;
+	unsigned int rowData : DEFAULT_DATA_BITS;
+	unsigned int statusData : DEFAULT_DATA_BITS;
+//	Location locationData;
+
 };
 
-class Tag_Data {
+class LogRecord {
 public:
 	Timestamp timestamp;
 	Data_Type type : TYPE_BITS;
 	Data data;
-	Tag_Data(Data_Type type, uint32_t data) {
+	LogRecord(Data_Type type, Data data) {
 		timestamp.time = millis() / 60000; //divided by number of ms in one minute.
 		timestamp.id = 0;
 		this->type = type;
-		this->data.tagData = data;
+		this->data = data;
 	}
-	Tag_Data() {}; //This is needed to create the tags array.
+	LogRecord() {}; //This is needed to create the records array.
 
-	// we dont save uid's anymore.
-	//uint8_t uid[7];
-	//Tag_Data(uint8_t uid[]){
-	//	timestamp.time = millis() / 60000; //divided by number of ms in one minute.
-	//	timestamp.id = 0;
-	//	//uid = new uint8_t[7];
-	//	memcpy(this->uid, uid, 7);
-	//}
 };
 
-class NFC_Tags_Container {
+class LogContainer {
 private:
-	Tag_Data tags[CONTAINER_SIZE];
+	LogRecord records[CONTAINER_SIZE];
 	uint16_t size = 0;
-	void printTag(Stream & stream, const Tag_Data & td) const
+	void printTag(Stream & stream, const LogRecord & td) const
 	{
 		stream.print(F("{\"data\":\""));
-		stream.print(td.data.tagData);
+		stream.print(td.data.tagId);
 		stream.print(F("\",\"ts\":\""));
 		stream.print(td.timestamp.time);
 		stream.print(F("\",\"tsid\":\""));
@@ -67,16 +101,16 @@ private:
 		stream.print('}');
 	}
 public:
-	void add(Data_Type type, uint32_t data) {
+	void addNewRecord(Data_Type type, Data data) {
 		if (size == CONTAINER_SIZE - 1) {
 			Serial.print(F("ERROR: OUT OF MEMORY!"));
 			return;
 		}
-		Tag_Data newTag = Tag_Data(type, data);
+		LogRecord newTag = LogRecord(type, data);
 		if (size > 0) {
-			const Tag_Data& last = tags[size - 1];
+			const LogRecord& last = records[size - 1];
 			if (last.timestamp.time >= newTag.timestamp.time) {
-				//if max number of tags (max val of timestamp.id) added this minute, we add to next minute
+				//if max number of records (max val of timestamp.id) added this minute, we add to next minute
 				if (last.timestamp.id < pow(2, TS_ID_BITS) - 1) {
 					newTag.timestamp.id = last.timestamp.id + 1;
 					newTag.timestamp.time = last.timestamp.time;
@@ -86,13 +120,14 @@ public:
 				}
 			}
 		}
-		tags[size] = newTag;
+		records[size] = newTag;
 		size++;
 	}
+	
 	void printJSON(Stream& stream) const {
 		stream.print('[');
 		for (int i = 0; i < size; i++) {
-			const Tag_Data& td = tags[i];
+			const LogRecord& td = records[i];
 			printTag(stream, td);
 			if (i != size - 1) stream.print(',');
 		}
@@ -104,7 +139,7 @@ public:
 };
 
 //moved the old uid print method to a function in case we need it in the future.
-//void printUID(Stream & stream, Tag_Data &td)
+//void printUID(Stream & stream, LogRecord &td)
 //{
 //	stream.print(F("{\"uid\":\""));
 //	char hexid[21] = { 0 };

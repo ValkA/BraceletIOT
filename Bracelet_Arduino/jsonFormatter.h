@@ -16,7 +16,7 @@ public:
 	int getFreeMem() {
 		return BUFFER_SIZE - jsonBuffer.size();
 	}
-	void insertTagIntoBuffer(const Tag_Data& td) {     
+	void insertTagIntoBuffer(const LogRecord& td) {     
         JsonObject& jObject = jsonBuffer.createObject();
         char hexid[21];
         for (int i = 0; i < 7; i++) {

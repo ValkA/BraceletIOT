@@ -30,7 +30,7 @@ static constexpr int NFC_PAIR_TIMEOUT = 7000; //in ms.
 static constexpr int BT_DATA_SEND_TIMEOUT = 30000; //in ms.
 static constexpr int TAG_PRESENT_TIMEOUT = 500; //in ms
 
-NFC_Tags_Container tags_cont;
+LogContainer tags_cont;
 //Known_Tags_Container known_tags;
 
 static constexpr int RX = 2; //On nano: white
@@ -87,14 +87,15 @@ void readTag(uint16_t timeout) {
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
 			uint8_t payloadLength = record.getPayloadLength(); //todo: probably should add some check here that payloadLength isnt too large.
 			byte payload[payloadLength];
-			record.getPayload(payload);
+			record.getPayload(payload);   
 
-			uint16_t message_data = atoi((char*)payload);
-			Serial.println(F("message: "));
-			Serial.println(message_data);
+//////////print for testing (remove later)////////////
+      Data temp;
+      temp.tagId = 1;
+      tags_cont.addNewRecord(tag_scan, temp); //temp: type(enum) and data for this type.
+      sendDataBT();
+////////// End print for testing////////////
 
-			tags_cont.add(type_tag_data, message_data);
-			sendDataBT();
 			Serial.print(F("Memory Left: "));
 			Serial.println(freeMemory());
 			Serial.print(F("DB size: "));
@@ -115,6 +116,7 @@ void readTag(uint16_t timeout) {
 			*/
 		}
 	}
+
 }
 
 void sendDataBT() {
