@@ -15,6 +15,7 @@
 
 #include "emulatetag.h"
 #include "NFC_Tags_Container.h"
+#include "Parser.h"
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
 
@@ -54,17 +55,9 @@ void setup(void) {
 }
 
 void loop(void) {
-	readTag(TAG_PRESENT_TIMEOUT);//0 = infinity timeout
-
-	//checking if pairing is finished, and phone sent '#':
-	//in the future, we should add a flag that we are waiting for pair
-	//right now it's not neccessary since the phone never sends anything other than pair auth.
+	readTag(TAG_PRESENT_TIMEOUT);
 	if (bluetoothSerial.available()) {
-		Serial.print(F("Got #"));
-		sendDataBT();
-	}
-	while (bluetoothSerial.available()) { //clearing the BT buffer.
-		bluetoothSerial.read();
+		handleMessage(bluetoothSerial);
 	}
 }
 
@@ -87,7 +80,7 @@ void readTag(uint16_t timeout) {
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
 			uint8_t payloadLength = record.getPayloadLength(); //todo: probably should add some check here that payloadLength isnt too large.
 			byte payload[payloadLength];
-			record.getPayload(payload);   
+			record.getPayload(payload);
 
 //////////print for testing (remove later)////////////
       Data temp;
@@ -119,11 +112,33 @@ void readTag(uint16_t timeout) {
 
 }
 
+void handleMessage(Stream& stream){
+	LogRecord logRecord;
+	if(stream >> logRecord){
+		tags_cont.addNewRecord(logRecord.type, logRecord.data);
+
+		//do stuff for relevant logRecord.type
+		switch (logRecord.type){
+			case app_command:
+				//TODO: BUZZ
+			break;
+			case mobile_device_id:
+				stream << tags_cont;
+			break;
+		}
+
+	} else {//ERROR, handle it by clearing the buffer until the next '<'
+		while(stream.available() && stream.peek() != '<'){
+			stream.read();
+		}
+	}
+}
+
 void sendDataBT() {
 	Serial.println(F("Sending over BT:"));
-	tags_cont.printJSON(Serial);
+	Serial << tags_cont;
 	Serial.println();
-	tags_cont.printJSON(bluetoothSerial);
+	bluetoothSerial << tags_cont;
 	bluetoothSerial.println('#');
 }
 
@@ -131,7 +146,7 @@ void sendDataBT() {
 //	Serial.println(F("changing to pair state"));
 //	nfc.init();//dont know why, but doesnt work without that here..
 //	nfc.emulate(timeout);
-//	
+//
 //	/* removed because we'll try dynamic pairing instead.
 //	Serial.println(F("waiting for #"));
 //	unsigned long temp = millis();

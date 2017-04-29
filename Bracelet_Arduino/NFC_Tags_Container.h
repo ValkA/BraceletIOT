@@ -22,7 +22,7 @@ struct Timestamp {
 	unsigned int id : TS_ID_BITS; //in case several tags get scanned in the same minute.
 };
 
-enum Data_Type { 
+enum Data_Type {
 		tag_scan,
 		mobile_device_id,
 		app_new_data,
@@ -32,10 +32,10 @@ enum Data_Type {
 		app_command,
 		app_soldier_status,
 		app_location,
-		custom	
+		custom
 	};
 
-	
+
 //class Location {
 //
 //		unsigned int latitude : LOCATION_FIELD_BITS;
@@ -46,7 +46,7 @@ enum Data_Type {
 //			this->latitude = latitude;
 //			this->longitude = longitude;
 //		}
-//		
+//
 //		unsigned int locationGetLatitude() {
 //			return this->latitude;
 //		}
@@ -64,7 +64,7 @@ enum Data_Type {
 union Data {
 	unsigned int tagId : TAG_DATA_BITS;
 	unsigned int mobileIdData : DEFAULT_DATA_BITS;
-	unsigned int rowData : DEFAULT_DATA_BITS;
+	unsigned int rawData : DEFAULT_DATA_BITS;
 	unsigned int statusData : DEFAULT_DATA_BITS;
 //	Location locationData;
 
@@ -82,7 +82,6 @@ public:
 		this->data = data;
 	}
 	LogRecord() {}; //This is needed to create the records array.
-
 };
 
 class LogContainer {
@@ -123,19 +122,12 @@ public:
 		records[size] = newTag;
 		size++;
 	}
-	
-	void printJSON(Stream& stream) const {
-		stream.print('[');
-		for (int i = 0; i < size; i++) {
-			const LogRecord& td = records[i];
-			printTag(stream, td);
-			if (i != size - 1) stream.print(',');
-		}
-		stream.print("]");
-	}
+
 	int getSize() {
 		return size;
 	}
+
+	friend Stream& operator<<(Stream& stream, LogContainer& container);
 };
 
 //moved the old uid print method to a function in case we need it in the future.
