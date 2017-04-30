@@ -23,17 +23,17 @@ struct Timestamp {
 };
 
 enum Data_Type {
-		tag_scan,
-		mobile_device_id,
-		app_new_data,
-		app_update_data,
-		app_headquarter_communication,
-		blood_pressure,
-		app_command,
-		app_soldier_status,
-		app_location,
-		custom
-	};
+		tag_scan = 1,
+		mobile_device_id = 2,
+		app_new_data = 3,
+		app_update_data = 4,
+		app_headquarter_communication = 5,
+		blood_pressure = 6,
+		app_command = 7,//buzzer
+		app_soldier_status = 8,
+		app_location = 9,
+		custom = 10
+};
 
 
 //class Location {

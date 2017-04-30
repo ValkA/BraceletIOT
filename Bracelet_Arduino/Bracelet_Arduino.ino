@@ -12,53 +12,52 @@
 #include "PN532.h"
 #include "PN532_SPI.h"
 #include "NfcAdapter.h"
-
+#include "Notes.h"
 #include "emulatetag.h"
-#include "NFC_Tags_Container.h"
 #include "Parser.h"
+#include "NFC_Tags_Container.h"
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
 
-PN532_SPI pn532spi(SPI, 10);
+//pin defines
+#define BUZZER_PIN 4
+#define PN532_SS 10
+#define PN532_MOSI 11
+#define PN532_MISO 12
+#define PN532_SCK 12
+#define HC_06_TX 2
+#define HC_06_RX 3
+
+//timeout defines in milliseconds
+#define NFC_READ_TIMEOUT 1000
+#define NFC_PAIR_TIMEOUT 7000
+#define BT_DATA_SEND_TIMEOUT 30000
+#define TAG_PRESENT_TIMEOUT 500
+
+//Structures
+PN532_SPI pn532spi(SPI, PN532_SS);
 NfcAdapter nfc = NfcAdapter(pn532spi);
-
-//EmulateTag nfc(pn532spi);
-//uint8_t emulatedUID[3] = { 0x12, 0x34, 0x56 };  //this is the UID of the emulated tag (that holds the message above for pairing)
-//uint8_t bluetoothPairNFCMessage[] = BLUETOOTH_PAIR_NFC_MESSAGE;
-
-static constexpr int NFC_READ_TIMEOUT = 1000; //in ms.
-static constexpr int NFC_PAIR_TIMEOUT = 7000; //in ms.
-static constexpr int BT_DATA_SEND_TIMEOUT = 30000; //in ms.
-static constexpr int TAG_PRESENT_TIMEOUT = 500; //in ms
-
+SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX);
 LogContainer tags_cont;
-//Known_Tags_Container known_tags;
 
-static constexpr int RX = 2; //On nano: white
-static constexpr int TX = 3; //On nano: grey
-SoftwareSerial bluetoothSerial(RX, TX); //On UNO: 2 violet, 3 blue
 
 void setup(void) {
 	Serial.begin(115200);
-	Serial.println(F("Starting..."));
-	Serial.println(F("Memory Left:"));
-	Serial.println(freeMemory());
-
 	bluetoothSerial.begin(9600);
-	//bluetoothSerial.println(F("Starting"));
-
 	nfc.begin();
-
-	/*nfc.setNdefFile(bluetoothPairNFCMessage, sizeof(bluetoothPairNFCMessage));
-	nfc.setUid(emulatedUID);
-	nfc.init();*/
+  pinMode(BUZZER_PIN, OUTPUT);
+  Serial.println(F("Setup done..."));
 }
 
 void loop(void) {
 	readTag(TAG_PRESENT_TIMEOUT);
 	if (bluetoothSerial.available()) {
-		handleMessage(bluetoothSerial);
-	}
+    handleDoctorMessage(bluetoothSerial);
+  }
+  if (Serial.available()) {
+   handleDebugMessage();
+  }
+  
 }
 
 void readTag(uint16_t timeout) {
@@ -66,102 +65,84 @@ void readTag(uint16_t timeout) {
 		Serial.print(F("Found tag: "));
 		NfcTag tag = nfc.read();
 		if (!tag.hasNdefMessage()) {
+      playErrorTone(BUZZER_PIN);
 			Serial.println(F("ERROR: No NDEF message!"));
-		}
-		else {
+		} else {
 			NdefMessage message = tag.getNdefMessage();
 			uint8_t recordCount = message.getRecordCount();
 			if (recordCount > 1) {
+        playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: More than 1 record!"));
 			}
 			else if (recordCount == 0) {
+        playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: No record!"));
 			}
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
 			uint8_t payloadLength = record.getPayloadLength(); //todo: probably should add some check here that payloadLength isnt too large.
-			byte payload[payloadLength];
+			byte payload[payloadLength+1];
 			record.getPayload(payload);
+      payload[payloadLength] = '\0';// null terminator for atoi
+      Data tagData;
+      tagData.tagId = atoi(payload);
+      tags_cont.addNewRecord(tag_scan, tagData);
 
-//////////print for testing (remove later)////////////
-      Data temp;
-      temp.tagId = 1;
-      tags_cont.addNewRecord(tag_scan, temp); //temp: type(enum) and data for this type.
-      sendDataBT();
-////////// End print for testing////////////
-
-			Serial.print(F("Memory Left: "));
-			Serial.println(freeMemory());
-			Serial.print(F("DB size: "));
-			Serial.println(tags_cont.getSize());
-
+      Serial.print(F("Scanned TagID = "));
+      Serial.println((char*)payload);
+      playNewTagTone(BUZZER_PIN);
 			delay(NFC_READ_TIMEOUT);
-
-			/*
-			// Can be used for debugging:
-			// Force the data into a String (might work depending on the content)
-			// Real code should use smarter processing
-			String payloadAsString = "";
-			for (int c = 0; c < payloadLength; c++) {
-				payloadAsString += (char)payload[c];
-			}
-			Serial.print("  Payload (as String): ");
-			Serial.println(payloadAsString);
-			*/
 		}
 	}
 
 }
 
-void handleMessage(Stream& stream){
-	LogRecord logRecord;
-	if(stream >> logRecord){
-		tags_cont.addNewRecord(logRecord.type, logRecord.data);
-
-		//do stuff for relevant logRecord.type
-		switch (logRecord.type){
-			case app_command:
-				//TODO: BUZZ
-			break;
-			case mobile_device_id:
-				stream << tags_cont;
-			break;
-		}
-
-	} else {//ERROR, handle it by clearing the buffer until the next '<'
-		while(stream.available() && stream.peek() != '<'){
-			stream.read();
-		}
-	}
+void handleDoctorMessage(Stream& stream){
+ LogRecord logRecord;
+  if(stream >> logRecord){
+    tags_cont.addNewRecord(logRecord.type, logRecord.data);
+    Serial.print(F("Got Doctor message type "));
+    Serial.println(logRecord.type);
+    
+    //do stuff for relevant logRecord.type
+    switch (logRecord.type){
+      case app_command :
+        playBuzzTone(BUZZER_PIN);
+        stream.println("#");//Ack
+      break;
+      case mobile_device_id:
+        playDoctorConnectedTone(BUZZER_PIN);
+        stream << tags_cont;//No need for Ack, we are sending data - should we wait for ack here ?!
+      break;
+      default:
+        playDoctorMessageTone(BUZZER_PIN);
+        stream.println("#");//Ack
+      break;
+    }
+  } else {//ERROR, handle it by clearing the buffer until the next '<'
+    playErrorTone(BUZZER_PIN);
+    while(stream.available() && stream.peek() != '<'){
+      stream.read();
+    }
+  }
 }
 
-void sendDataBT() {
-	Serial.println(F("Sending over BT:"));
-	Serial << tags_cont;
-	Serial.println();
-	bluetoothSerial << tags_cont;
-	bluetoothSerial.println('#');
+void handleDebugMessage(){
+ char c = Serial.read();
+ switch (c){
+  case 'd':
+    Serial << tags_cont;
+    break;
+  case 'm':
+    Serial.print(F("Heap memory left: "));
+    Serial.println(freeMemory());
+    Serial.print(F("DB Size: "));
+    Serial.println(tags_cont.getSize());
+    break;
+  case 'b':
+    playBuzzTone(BUZZER_PIN);
+    break;
+  default:
+    playErrorTone(BUZZER_PIN);
+    Serial.println(F("Unknown command, use 'd' to print LogContainer or 'm' to see how much memory left"));    
+ }
 }
-
-//void tryToPairViaNFC(uint16_t timeout) {
-//	Serial.println(F("changing to pair state"));
-//	nfc.init();//dont know why, but doesnt work without that here..
-//	nfc.emulate(timeout);
-//
-//	/* removed because we'll try dynamic pairing instead.
-//	Serial.println(F("waiting for #"));
-//	unsigned long temp = millis();
-//	while (!bluetoothSerial.available()) { //waiting for some data to be sent from the phone to make sure there is a connection.
-//		if (millis() - temp > BT_DATA_SEND_TIMEOUT) {
-//			Serial.println(F("Timeout! Didnt get #!"));
-//			break;
-//		}
-//	}
-//	if (bluetoothSerial.available()) {
-//		Serial.print(F("Got #"));
-//	}
-//	while (bluetoothSerial.available()) { //clearing the buffer.
-//		bluetoothSerial.read();
-//	}
-//	sendDataBT();
-//	*/
-//}
