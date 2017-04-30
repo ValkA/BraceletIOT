@@ -19,7 +19,7 @@ The command <2,$doctor_device_id> will send back all the data that it contains i
 ($doctor_device_id is an int that represents the ID of the connected phone)
 the output will be [<$type,$time,$tsid,$data>, <$type,$time,$tsid,$data>, ..., <$type,$time,$tsid,$data>]
 ### Wiring:
-![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/Bracelet_Arduino/bracelet_bb.png)
+![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
 
 ### IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
