@@ -11,7 +11,8 @@ as an acknowlegment the bracelet will send back its database with the following 
 
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
 As an acknowledge bracelet sends # back.
-- <3,Integer> - delete record number $data (the index in the order from when sending <1,Integer>).
+- <3,Integer> - delete record
+$data is the record's index in the list that received by sending <1,Integer> command. 
 It doesn't actually deletes, just adds a record into the DB. when phone is showing the list, it should hide deleted records
 As an acknowledge bracelet sends # back.
 - <4,Integer> - adds a record of headquarter communication (such as evacuation notification),
@@ -20,12 +21,14 @@ As an acknowledge bracelet sends # back.
 - <5,Integer> - adds a record of blood pressure.
 $data = blood pressure
 As an acknowledge bracelet sends # back.
-- <6,Integer> - Turn on buzzer, the $data has no meaning, but should be some kind of integer. 0 can be put there.
+- <6,Integer> - Turns on buzzer,
+$data has no meaning, but should be some kind of Integer.
+0 can be put there.
 As an acknowledge bracelet sends # back.
 - <13,Integer> - adds soldier status (severity of injury)
 $data is id of the status
 As an acknowledge bracelet sends # back.
-- <14,???> - will be location - not yet implemented
+- <14,???> - adds location record - not yet implemented
 As an acknowledge bracelet sends # back.
 - <15,Integer> - adds a custom record
 As an acknowledge bracelet sends # back.
