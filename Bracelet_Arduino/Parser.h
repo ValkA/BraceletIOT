@@ -69,9 +69,9 @@ bool operator>>(Stream& stream, LogRecord& record) {
 
     Data data;
     switch (type){
-		case tag_scan:
-            data.tagId = stream.parseInt();
-		break;
+		// case tag_scan: tags are recieved via NFC and not via bluetooth
+        //     data.tagId = stream.parseInt();
+		// break;
 		case mobile_device_id:
             data.mobileIdData = stream.parseInt();
 		break;
@@ -100,7 +100,7 @@ bool operator>>(Stream& stream, LogRecord& record) {
             data.rawData = stream.parseInt();
 		break;
         default:
-            data.rawData = -1;//ERROR
+            return false;
         break;
     }
 
