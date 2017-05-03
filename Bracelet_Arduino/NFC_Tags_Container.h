@@ -100,7 +100,7 @@ private:
 		stream.print('}');
 	}
 public:
-	void addNewRecord(Data_Type type, Data data) {
+	LogRecord addNewRecord(Data_Type type, Data data) {
 		if (size == CONTAINER_SIZE - 1) {
 			Serial.print(F("ERROR: OUT OF MEMORY!"));
 			return;
@@ -121,6 +121,7 @@ public:
 		}
 		records[size] = newTag;
 		size++;
+   return newTag;
 	}
 
 	int getSize() {

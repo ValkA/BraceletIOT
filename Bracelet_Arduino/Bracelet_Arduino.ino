@@ -85,7 +85,8 @@ void readTag(uint16_t timeout) {
       payload[payloadLength] = '\0';// null terminator for atoi
       Data tagData;
       tagData.tagId = atoi(payload);
-      tags_cont.addNewRecord(tag_scan, tagData);
+      bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
+      bluetoothSerial.println();
 
       Serial.print(F("Scanned TagID = "));
       Serial.println((char*)payload);
@@ -93,7 +94,6 @@ void readTag(uint16_t timeout) {
 			delay(NFC_READ_TIMEOUT);
 		}
 	}
-
 }
 
 void handleDoctorMessage(Stream& stream){
@@ -140,6 +140,13 @@ void handleDebugMessage(){
     break;
   case 'b':
     playBuzzTone(BUZZER_PIN);
+    break;
+  case 't':
+    Data tagData;
+    tagData.tagId = Serial.parseInt();
+    bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
+    bluetoothSerial.println();
+    playNewTagTone(BUZZER_PIN);
     break;
   default:
     playErrorTone(BUZZER_PIN);
