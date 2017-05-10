@@ -23,16 +23,16 @@ struct Timestamp {
 };
 
 enum Data_Type {
-		tag_scan = 0,
-		mobile_device_id = 1,
-		app_new_data = 2,
-		app_update_data = 3,
-		app_headquarter_communication = 4,
-		blood_pressure = 5,
-		app_command = 6,//buzzer
-		app_soldier_status = 7,
-		app_location = 8,
-		custom = 9
+	tag_scan = 0,
+	mobile_device_id = 1,
+	app_new_data = 2,
+	app_update_data = 3,
+	app_headquarter_communication = 4,
+	blood_pressure = 5,
+	app_command = 6,//buzzer
+	app_soldier_status = 7,
+	app_location = 8,
+	custom = 9
 };
 
 union Data {
@@ -40,7 +40,7 @@ union Data {
 	unsigned int mobileIdData : DEFAULT_DATA_BITS;
 	unsigned int rawData : DEFAULT_DATA_BITS;
 	unsigned int statusData : DEFAULT_DATA_BITS;
-//	Location locationData;
+	//	Location locationData;
 };
 
 
@@ -120,7 +120,7 @@ public:
 		}
 		records[size] = newTag;
 		size++;
-   return newTag;
+		return newTag;
 	}
 
 	int getSize() {
