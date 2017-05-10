@@ -13,7 +13,7 @@
 #include "PN532_SPI.h"
 #include "NfcAdapter.h"
 #include "Notes.h"
-#include "emulatetag.h"
+//#include "emulatetag.h"
 #include "Parser.h"
 #include "NFC_Tags_Container.h"
 //#include "Known_Tags_Container.h"

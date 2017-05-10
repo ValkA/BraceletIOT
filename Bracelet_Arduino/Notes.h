@@ -1,6 +1,6 @@
 #ifndef _NOTES_H
 #define _NOTES_H
- 
+
 #define NOTE_B0  31
 #define NOTE_C1  33
 #define NOTE_CS1 35
@@ -91,32 +91,33 @@
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
 
-playErrorTone(int pin){
-  tone(pin, NOTE_G5, 200);
-  delay(200);
-  tone(pin, NOTE_G4, 200);
+void playErrorTone(int pin) {
+	tone(pin, NOTE_G5, 200);
+	delay(200);
+	tone(pin, NOTE_G4, 200);
+
 }
 
-playNewTagTone(int pin){
-  tone(pin, NOTE_F5, 50);
-  delay(50);
-  tone(pin, NOTE_G5, 50);
+void playNewTagTone(int pin) {
+	tone(pin, NOTE_F5, 50);
+	delay(50);
+	tone(pin, NOTE_G5, 50);
 }
 
-playDoctorConnectedTone(int pin){
-  tone(pin, NOTE_F5, 51);
-  delay(50);
-  tone(pin, NOTE_G5, 51);
-  delay(50);
-  tone(pin, NOTE_A5, 50);
+void playDoctorConnectedTone(int pin) {
+	tone(pin, NOTE_F7, 50);
+	delay(100);
+	tone(pin, NOTE_C7, 50);
+	delay(100);
+	tone(pin, NOTE_D7, 50);
 }
 
-playDoctorMessageTone(int pin){
-  tone(pin, NOTE_F5, 50);
+void playDoctorMessageTone(int pin) {
+	tone(pin, NOTE_F5, 50);
 }
 
-playBuzzTone(int pin){
-  tone(pin, NOTE_GS6, 1000);
+void playBuzzTone(int pin) {
+	tone(pin, NOTE_GS6, 1000);
 }
 
 #endif
