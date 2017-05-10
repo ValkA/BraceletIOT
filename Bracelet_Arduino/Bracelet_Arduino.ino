@@ -20,7 +20,8 @@
 //#include "NFCPairingProtocol.h"
 
 //pin defines
-#define BUZZER_PIN 4
+#define BUZZER_PIN 9
+#define LED_PIN 5
 #define PN532_SS 10
 #define PN532_MOSI 11
 #define PN532_MISO 12
@@ -57,7 +58,7 @@ void loop(void) {
   if (Serial.available()) {
    handleDebugMessage();
   }
-  
+
 }
 
 void readTag(uint16_t timeout) {
@@ -85,9 +86,11 @@ void readTag(uint16_t timeout) {
       payload[payloadLength] = '\0';// null terminator for atoi
       Data tagData;
       tagData.tagId = atoi(payload);
+	  //add the tag and send it via bluetooth
       bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
-      bluetoothSerial.println();
+      bluetoothSerial.println();//needed to actually send...
 
+	  //for debug
       Serial.print(F("Scanned TagID = "));
       Serial.println((char*)payload);
       playNewTagTone(BUZZER_PIN);
@@ -102,7 +105,7 @@ void handleDoctorMessage(Stream& stream){
     tags_cont.addNewRecord(logRecord.type, logRecord.data);
     Serial.print(F("Got Doctor message type "));
     Serial.println(logRecord.type);
-    
+
     //do stuff for relevant logRecord.type
     switch (logRecord.type){
       case app_command :
@@ -111,9 +114,10 @@ void handleDoctorMessage(Stream& stream){
       break;
       case mobile_device_id:
         playDoctorConnectedTone(BUZZER_PIN);
-        stream << tags_cont;//No need for Ack, we are sending data - should we wait for ack here ?!
+        stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
       break;
       default:
+	  	//just a beep that message was recieved
         playDoctorMessageTone(BUZZER_PIN);
         stream.println("#");//Ack
       break;
@@ -126,6 +130,7 @@ void handleDoctorMessage(Stream& stream){
   }
 }
 
+//stuff for debugging from Serial
 void handleDebugMessage(){
  char c = Serial.read();
  switch (c){
@@ -150,6 +155,6 @@ void handleDebugMessage(){
     break;
   default:
     playErrorTone(BUZZER_PIN);
-    Serial.println(F("Unknown command, use 'd' to print LogContainer or 'm' to see how much memory left"));    
+    Serial.println(F("Unknown command, use 'd' to print LogContainer or 'm' to see how much memory left"));
  }
 }

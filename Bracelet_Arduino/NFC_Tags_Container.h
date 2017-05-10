@@ -35,40 +35,39 @@ enum Data_Type {
 		custom = 9
 };
 
-
-//class Location {
-//
-//		unsigned int latitude : LOCATION_FIELD_BITS;
-//		unsigned int longitude : LOCATION_FIELD_BITS;
-//
-//    Location() {};
-//		Location(unsigned int latitude , unsigned int longitude) {
-//			this->latitude = latitude;
-//			this->longitude = longitude;
-//		}
-//
-//		unsigned int locationGetLatitude() {
-//			return this->latitude;
-//		}
-//		unsigned int locationGetLongitude() {
-//			return this->latitude;
-//		}
-//		unsigned int locationUpdateLatitude() {
-//			return this->latitude;
-//		}
-//		unsigned int locationUpdateLongitude() {
-//			return this->latitude;
-//		}
-//};
-
 union Data {
 	unsigned int tagId : TAG_DATA_BITS;
 	unsigned int mobileIdData : DEFAULT_DATA_BITS;
 	unsigned int rawData : DEFAULT_DATA_BITS;
 	unsigned int statusData : DEFAULT_DATA_BITS;
 //	Location locationData;
-
 };
+
+
+//class Location {
+//
+//    unsigned int latitude : LOCATION_FIELD_BITS;
+//    unsigned int longitude : LOCATION_FIELD_BITS;
+//
+//    Location() {};
+//    Location(unsigned int latitude , unsigned int longitude) {
+//      this->latitude = latitude;
+//      this->longitude = longitude;
+//    }
+//
+//    unsigned int locationGetLatitude() {
+//      return this->latitude;
+//    }
+//    unsigned int locationGetLongitude() {
+//      return this->latitude;
+//    }
+//    unsigned int locationUpdateLatitude() {
+//      return this->latitude;
+//    }
+//    unsigned int locationUpdateLongitude() {
+//      return this->latitude;
+//    }
+//};
 
 class LogRecord {
 public:

@@ -5,7 +5,10 @@
 
 #include "NFC_Tags_Container.h"
 
-//output format is <$type,$time,$tsid,$data>
+/**
+ * send record to stream.
+ * output format is <$type,$time,$tsid,$data>
+ */
 Stream& operator<<(Stream& stream, const LogRecord& record) {
     stream.print(F("<"));
     stream.print(record.type);
@@ -55,8 +58,10 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
     return stream;
 }
 
-// input format is <$type,$data>
-// return true iff success
+/**
+ * read record from stream, return true iff success.
+ * input format is <$type,$data> TODO:add case for edit message type (right now we dont support this type at all)
+ */
 bool operator>>(Stream& stream, LogRecord& record) {
     if(stream.read() != '<'){
         return false;
@@ -69,7 +74,7 @@ bool operator>>(Stream& stream, LogRecord& record) {
 
     Data data;
     switch (type){
-		// case tag_scan: tags are recieved via NFC and not via bluetooth
+		// case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
         //     data.tagId = stream.parseInt();
 		// break;
 		case mobile_device_id:
@@ -112,6 +117,9 @@ bool operator>>(Stream& stream, LogRecord& record) {
     return true;
 }
 
+/**
+ * send container to stream.
+ */
 Stream& operator<<(Stream& stream, LogContainer& container){
   stream.print('[');
   for (int i = 0; i < container.size; i++) {
