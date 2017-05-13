@@ -13,9 +13,9 @@
 #include "PN532_SPI.h"
 #include "NfcAdapter.h"
 #include "Notes.h"
-//#include "emulatetag.h"
 #include "Parser.h"
-#include "NFC_Tags_Container.h"
+#include "Logs_Container.h"
+//#include "emulatetag.h"
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
 
@@ -39,7 +39,7 @@
 PN532_SPI pn532spi(SPI, PN532_SS);
 NfcAdapter nfc = NfcAdapter(pn532spi);
 SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX);
-LogContainer tags_cont;
+LogsContainer tags_cont;
 
 
 void setup(void) {
@@ -61,7 +61,6 @@ void loop(void) {
 	if (Serial.available()) {
 		handleDebugMessage();
 	}
-
 }
 
 void readTag(uint16_t timeout) {
@@ -163,6 +162,6 @@ void handleDebugMessage() {
 		break;
 	default:
 		playErrorTone(BUZZER_PIN);
-		Serial.println(F("Unknown command, use 'd' to print LogContainer or 'm' to see how much memory left"));
+		Serial.println(F("Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
 	}
 }

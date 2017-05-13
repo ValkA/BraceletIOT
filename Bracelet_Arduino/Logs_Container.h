@@ -83,7 +83,7 @@ public:
 	LogRecord() {}; //This is needed to create the records array.
 };
 
-class LogContainer {
+class LogsContainer {
 private:
 	LogRecord records[CONTAINER_SIZE];
 	uint16_t size = 0;
@@ -124,11 +124,11 @@ public:
 		return newTag;
 	}
 
-	int getSize() {
+	int getSize() const {
 		return size;
 	}
 
-	friend Stream& operator<<(Stream& stream, LogContainer& container);
+	friend Stream& operator<<(Stream& stream, const LogsContainer& container);
 };
 
 //moved the old uid print method to a function in case we need it in the future.

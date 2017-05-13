@@ -3,7 +3,7 @@
 #ifndef _PARSER_H
 #define _PARSER_H
 
-#include "NFC_Tags_Container.h"
+#include "Logs_Container.h"
 
 /**
  * send record to stream.
@@ -120,7 +120,7 @@ bool operator >> (Stream& stream, LogRecord& record) {
 /**
  * send container to stream.
  */
-Stream& operator<<(Stream& stream, LogContainer& container) {
+Stream& operator<<(Stream& stream, const LogsContainer& container) {
 	stream.print('[');
 	for (int i = 0; i < container.size; i++) {
 		stream << container.records[i];

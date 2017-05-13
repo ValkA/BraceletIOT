@@ -95,7 +95,6 @@ void playErrorTone(int pin) {
 	tone(pin, NOTE_G5, 200);
 	delay(200);
 	tone(pin, NOTE_G4, 200);
-
 }
 
 void playNewTagTone(int pin) {
