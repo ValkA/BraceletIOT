@@ -88,14 +88,21 @@ void readTag(uint16_t timeout) {
 			record.getPayload(payload);
 			payload[payloadLength] = '\0';// null terminator for atoi
 			Data tagData;
-			tagData.tagId = atoi(payload);
+			byte* payloadDigitsOnly = payload;
+			for (uint8_t i = 0; i < payloadLength; i++) {
+				if (isdigit(payload[i])) {
+					payloadDigitsOnly = payloadDigitsOnly + i;
+					break;
+				}
+			}
+			tagData.tagId = atoi((char*)payloadDigitsOnly);
 			//add the tag and send it via bluetooth
 			bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
 			bluetoothSerial.println();//needed to actually send...
 
 			//for debug
 			Serial.print(F("TagID = "));
-			Serial.println((char*)payload);
+			Serial.println((char*)payloadDigitsOnly);
 			playNewTagTone(BUZZER_PIN);
 			delay(NFC_READ_TIMEOUT);
 			//For memory Debugging:
