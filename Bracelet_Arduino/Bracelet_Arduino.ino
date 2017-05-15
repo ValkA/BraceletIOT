@@ -129,6 +129,13 @@ void handleDoctorMessage(Stream& stream) {
 			playDoctorConnectedTone(BUZZER_PIN);
 			stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
 			break;
+		case app_location_lat:
+			//will beep and send ack after <lon_type, lon>
+			break;
+		case app_location_lon:
+			stream.println("#");//Ack
+			playDoctorMessageTone(BUZZER_PIN);
+			break;
 		default:
 			//just a beep that message was recieved
 			playDoctorMessageTone(BUZZER_PIN);

@@ -17,6 +17,8 @@ static constexpr int TAG_DATA_BITS = 16;
 static constexpr int LOCATION_FIELD_BITS = 28; //TODO: check how many bits it takes
 static constexpr int DEFAULT_DATA_BITS = 28;
 
+static constexpr int LOCATION_FACTOR = 1000;
+
 struct Timestamp {
 	unsigned int time : TS_TIME_BITS; //stored in one minute intervals.
 	unsigned int id : TS_ID_BITS; //in case several tags get scanned in the same minute.
@@ -31,8 +33,10 @@ enum Data_Type {
 	blood_pressure = 5,
 	app_command = 6,//buzzer
 	app_soldier_status = 7,
-	app_location = 8,
-	custom = 9
+	// app_location = 8,
+	custom = 9,
+	app_location_lat = 10,
+	app_location_lon = 11
 };
 
 union Data {
@@ -40,7 +44,7 @@ union Data {
 	unsigned int mobileIdData : DEFAULT_DATA_BITS;
 	unsigned int rawData : DEFAULT_DATA_BITS;
 	unsigned int statusData : DEFAULT_DATA_BITS;
-	//	Location locationData;
+	int location : DEFAULT_DATA_BITS;
 };
 
 

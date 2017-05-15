@@ -35,6 +35,12 @@ As an acknowledge bracelet sends # back.
 
 For example, the command <1,123> will add a record into the bracelet that represents a new connection by a phone that is represented by the number 123. As a response you will get the database.
 
+- LOCATION:
+To register location you should send <10,(double/float)latitude><11,(double/float)longitude>
+you will see the location when you will send <1,doctor_id>. the location will be among the tags in the container.
+for example, [<1,3,0,1><10,32.2343><11,7.23456>]. fields 2 and 3 represent the latitude and longitude.
+
+
 # Wiring:
 ![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
 

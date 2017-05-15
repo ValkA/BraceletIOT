@@ -5,6 +5,33 @@
 
 #include "Logs_Container.h"
 
+Stream& operator<<(Stream& stream, const double& val){
+ // prints val with number of decimal places determine by precision
+ // precision is a number from 0 to 6 indicating the desired decimial places
+ // example: printDouble( 3.1415, 2); // prints 3.14 (two decimal places)
+ byte precision = 6;
+ stream.print (int(val));  //prints the int part
+ if( precision > 0) {
+   stream.print("."); // print the decimal point
+   unsigned long frac;
+   unsigned long mult = 1;
+   byte padding = precision -1;
+   while(precision--)
+      mult *=10;
+      
+   if(val >= 0)
+     frac = (val - int(val)) * mult;
+   else
+     frac = (int(val)- val ) * mult;
+   unsigned long frac1 = frac;
+   while( frac1 /= 10 )
+     padding--;
+   while(  padding--)
+     stream.print("0");
+   stream.print(frac,DEC) ;
+ }
+}
+
 /**
  * send record to stream.
  * output format is <$type,$time,$tsid,$data>
@@ -43,8 +70,11 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 	case app_soldier_status:
 		stream.print(record.data.statusData);
 		break;
-	case app_location:
-		stream.print(F("1.123,1.232")); // not yet implemented
+	case app_location_lat:
+		stream << (((double)record.data.location)/LOCATION_FACTOR);
+		break;
+	case app_location_lon:
+		stream << (((double)record.data.location)/LOCATION_FACTOR);
 		break;
 	case custom:
 		stream.print(record.data.rawData);
@@ -98,8 +128,21 @@ bool operator >> (Stream& stream, LogRecord& record) {
 	case app_soldier_status:
 		data.statusData = stream.parseInt();
 		break;
-	case app_location:
-		data.rawData = -1;//TODO: implement location
+	case app_location_lat:
+		float lat;
+		lat = stream.parseFloat();
+    Serial << lat;
+		data.location = (int)(lat * LOCATION_FACTOR);
+    Serial.println();
+    Serial.println((int)(lat * LOCATION_FACTOR));
+    Serial.println(data.location);
+    stream << (((double)record.data.location)/LOCATION_FACTOR);
+    Serial.println();
+		break;
+	case app_location_lon:
+		float lon;
+		lon = stream.parseFloat();
+		data.location = (int)(lon * LOCATION_FACTOR);
 		break;
 	case custom:
 		data.rawData = stream.parseInt();
