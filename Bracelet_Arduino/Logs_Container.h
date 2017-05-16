@@ -1,7 +1,7 @@
 // NFC_Tags_Container.h
 
-#ifndef _NFC_TAGS_CONTAINER_h
-#define _NFC_TAGS_CONTAINER_h
+#ifndef _LOGS_CONTAINER_h
+#define _LOGS_CONTAINER_h
 
 #include <Arduino.h>
 //#include <ArduinoSTL.h>
@@ -14,10 +14,12 @@ static constexpr int TS_TIME_BITS = 11;
 static constexpr int TS_ID_BITS = 3;
 static constexpr int TYPE_BITS = 4;
 static constexpr int TAG_DATA_BITS = 16;
-static constexpr int LOCATION_FIELD_BITS = 28; //TODO: check how many bits it takes
 static constexpr int DEFAULT_DATA_BITS = 28;
 
-static constexpr int LOCATION_FACTOR = 1000;
+//Note: This is the maximum factor possible. On Arduino, float = double, and has only 6 digits of precision.
+//Even using this factor, there is a small loss of percision on the last digit.
+//It also must be long, not int, since int on arduino is only 16 bits, which means max is 65,535.
+static constexpr unsigned long LOCATION_FACTOR = 1000000; //10^6
 
 struct Timestamp {
 	unsigned int time : TS_TIME_BITS; //stored in one minute intervals.
@@ -33,45 +35,18 @@ enum Data_Type {
 	blood_pressure = 5,
 	app_command = 6,//buzzer
 	app_soldier_status = 7,
-	// app_location = 8,
 	custom = 9,
 	app_location_lat = 10,
 	app_location_lon = 11
 };
 
 union Data {
-	unsigned int tagId : TAG_DATA_BITS;
-	unsigned int mobileIdData : DEFAULT_DATA_BITS;
-	unsigned int rawData : DEFAULT_DATA_BITS;
-	unsigned int statusData : DEFAULT_DATA_BITS;
-	int location : DEFAULT_DATA_BITS;
+	unsigned long tagId : TAG_DATA_BITS;
+	unsigned long mobileIdData : DEFAULT_DATA_BITS;
+	unsigned long rawData : DEFAULT_DATA_BITS;
+	unsigned long statusData : DEFAULT_DATA_BITS;
+	long location : DEFAULT_DATA_BITS;
 };
-
-
-//class Location {
-//
-//    unsigned int latitude : LOCATION_FIELD_BITS;
-//    unsigned int longitude : LOCATION_FIELD_BITS;
-//
-//    Location() {};
-//    Location(unsigned int latitude , unsigned int longitude) {
-//      this->latitude = latitude;
-//      this->longitude = longitude;
-//    }
-//
-//    unsigned int locationGetLatitude() {
-//      return this->latitude;
-//    }
-//    unsigned int locationGetLongitude() {
-//      return this->latitude;
-//    }
-//    unsigned int locationUpdateLatitude() {
-//      return this->latitude;
-//    }
-//    unsigned int locationUpdateLongitude() {
-//      return this->latitude;
-//    }
-//};
 
 class LogRecord {
 public:
@@ -91,17 +66,6 @@ class LogsContainer {
 private:
 	LogRecord records[CONTAINER_SIZE];
 	uint16_t size = 0;
-	void printTag(Stream & stream, const LogRecord & td) const
-	{
-		stream.print(F("{\"data\":\""));
-		stream.print(td.data.tagId);
-		stream.print(F("\",\"ts\":\""));
-		stream.print(td.timestamp.time);
-		stream.print(F("\",\"tsid\":\""));
-		stream.print(td.timestamp.id);
-		stream.print(F("\""));
-		stream.print('}');
-	}
 public:
 	LogRecord addNewRecord(Data_Type type, Data data) {
 		if (size == CONTAINER_SIZE - 1) {
@@ -128,12 +92,29 @@ public:
 		return newTag;
 	}
 
-	int getSize() const {
+	LogRecord addNewRecord(const LogRecord& newRecord) {
+		addNewRecord(newRecord.type, newRecord.data);
+	}
+
+	uint16_t getSize() const {
 		return size;
 	}
 
 	friend Stream& operator<<(Stream& stream, const LogsContainer& container);
 };
+
+//prints tag in JSON format, in case we need it in the future.
+/*void printTag(Stream & stream, const LogRecord & td) const
+{
+stream.print(F("{\"data\":\""));
+stream.print(td.data.tagId);
+stream.print(F("\",\"ts\":\""));
+stream.print(td.timestamp.time);
+stream.print(F("\",\"tsid\":\""));
+stream.print(td.timestamp.id);
+stream.print(F("\""));
+stream.print('}');
+}*/
 
 //moved the old uid print method to a function in case we need it in the future.
 //void printUID(Stream & stream, LogRecord &td)

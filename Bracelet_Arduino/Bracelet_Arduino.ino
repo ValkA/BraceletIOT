@@ -35,6 +35,9 @@
 #define BT_DATA_SEND_TIMEOUT 30000
 #define TAG_PRESENT_TIMEOUT 500
 
+//Memory defines in bytes
+#define MAX_PAYLOAD_LENGTH 32
+
 //Structures
 PN532_SPI pn532spi(SPI, PN532_SS);
 NfcAdapter nfc = NfcAdapter(pn532spi);
@@ -70,6 +73,7 @@ void readTag(uint16_t timeout) {
 		if (!tag.hasNdefMessage()) {
 			playErrorTone(BUZZER_PIN);
 			Serial.println(F("ERROR: No NDEF message!"));
+			return;
 		}
 		else {
 			NdefMessage message = tag.getNdefMessage();
@@ -77,13 +81,20 @@ void readTag(uint16_t timeout) {
 			if (recordCount > 1) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: More than 1 record!"));
+				return;
 			}
 			else if (recordCount == 0) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: No record!"));
+				return;
 			}
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
-			uint8_t payloadLength = record.getPayloadLength(); //todo: probably should add some check here that payloadLength isnt too large.
+			uint8_t payloadLength = record.getPayloadLength();
+			if (payloadLength > MAX_PAYLOAD_LENGTH) {
+				playErrorTone(BUZZER_PIN);
+				Serial.println(F("ERROR: Payload is too large!"));
+				return;
+			}
 			byte payload[payloadLength + 1];
 			record.getPayload(payload);
 			payload[payloadLength] = '\0';// null terminator for atoi
@@ -151,9 +162,16 @@ void handleDoctorMessage(Stream& stream) {
 	}
 }
 
+void clearStreamBuffer(Stream& stream) {
+	while (stream.available()) {
+		stream.read();
+	}
+}
+
 //stuff for debugging from Serial
 void handleDebugMessage() {
-	char c = Serial.read();
+	char c = Serial.peek();
+	LogRecord test_tag;
 	switch (c) {
 	case 'd':
 		Serial << tags_cont;
@@ -167,15 +185,17 @@ void handleDebugMessage() {
 	case 'b':
 		playBuzzTone(BUZZER_PIN);
 		break;
-	case 't':
-		Data tagData;
-		tagData.tagId = Serial.parseInt();
-		bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
-		bluetoothSerial.println();
+	case '<':
+		Serial >> test_tag;
+		tags_cont.addNewRecord(test_tag);
+		Serial.print(F("Added: "));
+		Serial << test_tag;
+		Serial.println();
 		playNewTagTone(BUZZER_PIN);
 		break;
 	default:
 		playErrorTone(BUZZER_PIN);
 		Serial.println(F("Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
 	}
+	clearStreamBuffer(Serial);
 }
