@@ -103,6 +103,14 @@ void playNewTagTone(int pin) {
 	tone(pin, NOTE_G5, 50);
 }
 
+void playSetupDoneTone(int pin) {
+	tone(pin, NOTE_F7, 50);
+	delay(100);
+	tone(pin, NOTE_C7, 50);
+	delay(100);
+	tone(pin, NOTE_D7, 50);
+}
+
 void playDoctorConnectedTone(int pin) {
 	tone(pin, NOTE_F7, 50);
 	delay(100);

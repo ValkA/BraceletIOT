@@ -51,6 +51,7 @@ void setup(void) {
 	nfc.begin();
 	pinMode(BUZZER_PIN, OUTPUT);
 	Serial.println(F("Setup done..."));
+	playSetupDoneTone(BUZZER_PIN);
 	//For memory Debugging:
 	Serial.print(F("Free Memory: "));
 	Serial.println(freeMemory());
