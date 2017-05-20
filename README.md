@@ -38,7 +38,7 @@ To register location you should send <10,(double/float)latitude><11,(double/floa
 you will see the location when you will send <1,doctor_id>. the location will be among the tags in the container.
 for example, [<1,3,0,1><10,32.2343><11,7.23456>]. fields 2 and 3 represent the latitude and longitude.
 
-#Debugging:
+# Debugging:
 It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of deubgging commands:
 - d - print the current database to the Serial.
 - m - print memory information to the Serial (size of free memory, number of records currently stored)
