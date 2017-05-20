@@ -117,23 +117,23 @@ stream.print('}');
 }*/
 
 //moved the old uid print method to a function in case we need it in the future.
-//void printUID(Stream & stream, LogRecord &td)
-//{
-//	stream.print(F("{\"uid\":\""));
-//	char hexid[21] = { 0 };
-//	for (int i = 0; i < 7; i++) {
-//		if (td.uid[i] <= 0x0F) {
-//			itoa(td.uid[i], &hexid[i * 3 + 1], 16);
-//			hexid[i * 3] = '0';
-//		}
-//		else if (td.uid[i] <= 0xFF) {
-//			itoa(td.uid[i], &hexid[i * 3], 16);
-//		} //else error.. cant be coz td.[uid] is a byte
-//		hexid[i * 3 + 2] = ' ';
-//
-//	}
-//	hexid[20] = 0;
-//	stream.print(hexid);
-//}
+/*void printUID(Stream & stream, LogRecord &td)
+{
+	stream.print(F("{\"uid\":\""));
+	char hexid[21] = { 0 };
+	for (int i = 0; i < 7; i++) {
+		if (td.uid[i] <= 0x0F) {
+			itoa(td.uid[i], &hexid[i * 3 + 1], 16);
+			hexid[i * 3] = '0';
+		}
+		else if (td.uid[i] <= 0xFF) {
+			itoa(td.uid[i], &hexid[i * 3], 16);
+		} //else error.. cant be coz td.[uid] is a byte
+		hexid[i * 3 + 2] = ' ';
+
+	}
+	hexid[20] = 0;
+	stream.print(hexid);
+}*/
 
 #endif

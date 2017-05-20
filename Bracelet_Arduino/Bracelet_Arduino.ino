@@ -15,6 +15,8 @@
 #include "Notes.h"
 #include "Parser.h"
 #include "Logs_Container.h"
+
+//deprecated:
 //#include "emulatetag.h"
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
@@ -36,7 +38,7 @@
 #define TAG_PRESENT_TIMEOUT 500
 
 //Memory defines in bytes
-#define MAX_PAYLOAD_LENGTH 32
+#define MAX_PAYLOAD_LENGTH 32 //Maximum length of NFC message (chars, since it's a string).
 
 //Structures
 PN532_SPI pn532spi(SPI, PN532_SS);
@@ -56,7 +58,12 @@ void setup(void) {
 	Serial.print(F("Free Memory: "));
 	Serial.println(freeMemory());
 }
-
+/*
+ * The loop cycles through 3 phases:
+ * 1. Waiting for tag on the NFC reader (longest phase, exact time is determined by TAG_PRESENT_TIMEOUT)
+ * 2. Checking whether there is a message in the bluetooth buffer.
+ * 3. Checking whether there is a debug message on the Serial buffer.
+ */
 void loop(void) {
 	readTag(TAG_PRESENT_TIMEOUT);
 	if (bluetoothSerial.available()) {
@@ -100,6 +107,7 @@ void readTag(uint16_t timeout) {
 			record.getPayload(payload);
 			payload[payloadLength] = '\0';// null terminator for atoi
 			Data tagData;
+			//remove leading non digits:
 			byte* payloadDigitsOnly = payload;
 			for (uint8_t i = 0; i < payloadLength; i++) {
 				if (isdigit(payload[i])) {
@@ -124,12 +132,20 @@ void readTag(uint16_t timeout) {
 	}
 }
 
+void recordAddedDebugMessage(const LogRecord& newRecord)
+{
+	Serial.print(F("Added: "));
+	Serial << newRecord;
+	Serial.println();
+}
+
 void handleDoctorMessage(Stream& stream) {
 	LogRecord logRecord;
 	if (stream >> logRecord) {
 		tags_cont.addNewRecord(logRecord.type, logRecord.data);
-		Serial.print(F("Got Doctor message type "));
-		Serial.println(logRecord.type);
+		//Serial.print(F("Got Doctor message type "));
+		//Serial.println(logRecord.type);
+		recordAddedDebugMessage(logRecord);
 
 		//do stuff for relevant logRecord.type
 		switch (logRecord.type) {
@@ -157,14 +173,12 @@ void handleDoctorMessage(Stream& stream) {
 	}
 	else {//ERROR, handle it by clearing the buffer until the next '<'
 		playErrorTone(BUZZER_PIN);
-		while (stream.available() && stream.peek() != '<') {
-			stream.read();
-		}
+		clearStreamBufferUntilNextMessage(stream);
 	}
 }
 
-void clearStreamBuffer(Stream& stream) {
-	while (stream.available()) {
+void clearStreamBufferUntilNextMessage(Stream& stream) {
+	while (stream.available() && stream.peek() != '<') {
 		stream.read();
 	}
 }
@@ -172,31 +186,35 @@ void clearStreamBuffer(Stream& stream) {
 //stuff for debugging from Serial
 void handleDebugMessage() {
 	char c = Serial.peek();
-	LogRecord test_tag;
+	LogRecord debugRecord;
 	switch (c) {
-	case 'd':
+	case 'd': //print all the tags:
 		Serial << tags_cont;
 		break;
-	case 'm':
+	case 'm': //print memoory info:
 		Serial.print(F("Heap memory left: "));
 		Serial.println(freeMemory());
 		Serial.print(F("DB Size: "));
 		Serial.println(tags_cont.getSize());
 		break;
-	case 'b':
+	case 'b': //play buzzer:
 		playBuzzTone(BUZZER_PIN);
 		break;
-	case '<':
-		Serial >> test_tag;
-		tags_cont.addNewRecord(test_tag);
-		Serial.print(F("Added: "));
-		Serial << test_tag;
-		Serial.println();
-		playNewTagTone(BUZZER_PIN);
+	case '<': //add new record manually through the serial:
+		if (Serial >> debugRecord) {
+			tags_cont.addNewRecord(debugRecord);
+			recordAddedDebugMessage(debugRecord);
+			playNewTagTone(BUZZER_PIN);
+		}
+		else {
+			playErrorTone(BUZZER_PIN);
+			Serial.println(F("ERROR: Wrong container format!"));
+		}
 		break;
 	default:
 		playErrorTone(BUZZER_PIN);
-		Serial.println(F("Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
+		Serial.println(F("ERROR: Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
 	}
-	clearStreamBuffer(Serial);
+	clearStreamBufferUntilNextMessage(Serial);
 }
+

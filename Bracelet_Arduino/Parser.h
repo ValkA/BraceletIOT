@@ -81,9 +81,10 @@ bool operator >> (Stream& stream, LogRecord& record) {
 
 	Data data;
 	switch (type) {
-		// case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
-		//     data.tagId = stream.parseInt();
-		// break;
+		case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
+					   //I added this temporarily so that we can get debug tags from Serial. TODO: Think of a better solution.
+		     data.tagId = stream.parseInt();
+		break;
 	case mobile_device_id:
 		data.mobileIdData = stream.parseInt();
 		break;
