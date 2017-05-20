@@ -28,8 +28,6 @@ As an acknowledge bracelet sends # back.
 - <13,Integer> - adds soldier status (severity of injury)
 $data is id of the status
 As an acknowledge bracelet sends # back.
-- <14,???> - adds location record - not yet implemented
-As an acknowledge bracelet sends # back.
 - <15,Integer> - adds a custom record
 As an acknowledge bracelet sends # back.
 
