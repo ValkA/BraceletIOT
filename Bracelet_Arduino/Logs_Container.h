@@ -40,11 +40,17 @@ enum Data_Type {
 	app_location_lon = 11
 };
 
+struct UpdateRecord{
+	Timestamp ts;
+	unsigned long data : (DEFAULT_DATA_BITS - (TS_TIME_BITS + TS_ID_BITS));
+};
+
 union Data {
 	unsigned long tagId : TAG_DATA_BITS;
 	unsigned long mobileIdData : DEFAULT_DATA_BITS;
 	unsigned long rawData : DEFAULT_DATA_BITS;
 	unsigned long statusData : DEFAULT_DATA_BITS;
+	UpdateRecord UpdateRecord;
 	long location : DEFAULT_DATA_BITS;
 };
 

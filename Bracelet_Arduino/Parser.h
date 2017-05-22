@@ -33,7 +33,11 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 		stream.print(record.data.rawData);
 		break;
 	case app_update_data:
-		stream.print(record.data.rawData);
+		stream.print(record.data.UpdateRecord.ts.time);
+		stream.print(",");
+			stream.print(record.data.UpdateRecord.ts.id);
+		stream.print(",");
+		stream.print(record.data.UpdateRecord.data);
 		break;
 	case app_headquarter_communication:
 		stream.print(record.data.rawData);
@@ -92,7 +96,11 @@ bool operator >> (Stream& stream, LogRecord& record) {
 		data.rawData = stream.parseInt();
 		break;
 	case app_update_data:
-		data.rawData = stream.parseInt();
+		data.UpdateRecord.ts.time = stream.parseInt();
+		if (stream.read() != ',') return false;
+		data.UpdateRecord.ts.id = stream.parseInt();
+		if (stream.read() != ',') return false;
+		data.UpdateRecord.data = stream.parseInt();
 		break;
 	case app_headquarter_communication:
 		data.rawData = stream.parseInt();
