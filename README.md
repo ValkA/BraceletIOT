@@ -7,14 +7,12 @@ The following types can be sent to it:
 $data represents a unique number of the phone.
 as an acknowlegment the bracelet will send back its database with the following format:
 [<$type,$time,$tsid,$data>, <$type,$time,$tsid,$data>, ..., <$type,$time,$tsid,$data>]
+also the format <3,$time,$tsid,$pointer_time,$pointer_tsid,$data> may be in the container,
+which represents an update record (that was added with <3,$time,$tsid,Integer> message from doctor)
 (records can be tags, app_data or any other things as defined in this doc https://docs.google.com/document/d/1-qHOoyWK5xLiwJvJ40AK0ONJ1xDmyQk-YbECwnUxzqk/edit)
-
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
 As an acknowledge bracelet sends # back.
-- <3,Integer> - delete record
-$data is the record's index in the list that received by sending <1,Integer> command. 
-It doesn't actually deletes, just adds a record into the DB. when phone is showing the list, it should hide deleted records
-As an acknowledge bracelet sends # back.
+- <3,$time,$tsid,Integer> - update record [$time,$tsid] with new data (Integer 14bit max)
 - <4,Integer> - adds a record of headquarter communication (such as evacuation notification),
 $data can be an ID of something, better ask course staff
 As an acknowledge bracelet sends # back.
