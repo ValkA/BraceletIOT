@@ -38,7 +38,7 @@
 #define TAG_PRESENT_TIMEOUT 500
 
 //Memory defines in bytes
-#define MAX_PAYLOAD_LENGTH 32 //Maximum length of NFC message (chars, since it's a string).
+#define MAX_PAYLOAD_LENGTH 64 //Maximum length of NFC message (chars, since it's a string).
 
 //Structures
 PN532_SPI pn532spi(SPI, PN532_SS);
@@ -74,6 +74,26 @@ void loop(void) {
 	}
 }
 
+byte* getPointerStartDigits(byte* payload, uint8_t payloadLength) {
+	byte* payloadDigitsOnly = payload;
+	for (uint8_t i = 0; i < payloadLength; i++) {
+		if (isdigit(payload[i])) {
+			payloadDigitsOnly = payloadDigitsOnly + i;
+			break;
+		}
+	}
+	return payloadDigitsOnly;
+}
+
+void placeEOLafterDigits(byte* payload,uint8_t payloadLength){
+	for (uint8_t i = 0; i < payloadLength; i++) {
+		if (!isdigit(payload[i])) {
+			payload[i] = 0;// null terminator for atoi
+			break;
+		}
+	}
+}
+
 void readTag(uint16_t timeout) {
 	if (nfc.tagPresent(timeout)) {
 		Serial.print(F("Found tag: "));
@@ -105,16 +125,11 @@ void readTag(uint16_t timeout) {
 			}
 			byte payload[payloadLength + 1];
 			record.getPayload(payload);
-			payload[payloadLength] = '\0';// null terminator for atoi
+			//payload[payloadLength] = '\0';// null terminator for atoi
 			Data tagData;
-			//remove leading non digits:
-			byte* payloadDigitsOnly = payload;
-			for (uint8_t i = 0; i < payloadLength; i++) {
-				if (isdigit(payload[i])) {
-					payloadDigitsOnly = payloadDigitsOnly + i;
-					break;
-				}
-			}
+			//remove all non digits before and after first number:
+			byte* payloadDigitsOnly = getPointerStartDigits(payload, payloadLength);
+			placeEOLafterDigits(payloadDigitsOnly, payload - payloadDigitsOnly);
 			tagData.tagId = atoi((char*)payloadDigitsOnly);
 			//add the tag and send it via bluetooth
 			bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
