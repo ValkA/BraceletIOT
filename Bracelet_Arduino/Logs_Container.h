@@ -99,7 +99,7 @@ public:
 	}
 
 	LogRecord addNewRecord(const LogRecord& newRecord) {
-		addNewRecord(newRecord.type, newRecord.data);
+		return addNewRecord(newRecord.type, newRecord.data);
 	}
 
 	uint16_t getSize() const {

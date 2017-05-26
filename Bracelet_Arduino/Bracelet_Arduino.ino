@@ -101,6 +101,7 @@ void readTag(uint16_t timeout) {
 		if (!tag.hasNdefMessage()) {
 			playErrorTone(BUZZER_PIN);
 			Serial.println(F("ERROR: No NDEF message!"));
+			delay(NFC_READ_TIMEOUT);
 			return;
 		}
 		else {
@@ -109,11 +110,13 @@ void readTag(uint16_t timeout) {
 			if (recordCount > 1) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: More than 1 record!"));
+				delay(NFC_READ_TIMEOUT);
 				return;
 			}
 			else if (recordCount == 0) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: No record!"));
+				delay(NFC_READ_TIMEOUT);
 				return;
 			}
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
@@ -121,16 +124,17 @@ void readTag(uint16_t timeout) {
 			if (payloadLength > MAX_PAYLOAD_LENGTH) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: Payload is too large!"));
+				delay(NFC_READ_TIMEOUT);
 				return;
 			}
 			byte payload[payloadLength + 1];
 			record.getPayload(payload);
-			//payload[payloadLength] = '\0';// null terminator for atoi
 			Data tagData;
 			//remove all non digits before and after first number:
 			byte* payloadDigitsOnly = getPointerStartDigits(payload, payloadLength);
 			placeEOLafterDigits(payloadDigitsOnly, payload - payloadDigitsOnly);
 			tagData.tagId = atoi((char*)payloadDigitsOnly);
+
 			//add the tag and send it via bluetooth
 			bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
 			bluetoothSerial.println();//needed to actually send...
@@ -139,10 +143,11 @@ void readTag(uint16_t timeout) {
 			Serial.print(F("TagID = "));
 			Serial.println((char*)payloadDigitsOnly);
 			playNewTagTone(BUZZER_PIN);
-			delay(NFC_READ_TIMEOUT);
 			//For memory Debugging:
 			Serial.print(F("Free Memory: "));
 			Serial.println(freeMemory());
+
+			delay(NFC_READ_TIMEOUT);
 		}
 	}
 }
@@ -217,7 +222,7 @@ void handleDebugMessage() {
 		break;
 	case '<': //add new record manually through the serial:
 		if (Serial >> debugRecord) {
-			tags_cont.addNewRecord(debugRecord);
+			debugRecord = tags_cont.addNewRecord(debugRecord);
 			recordAddedDebugMessage(debugRecord);
 			playNewTagTone(BUZZER_PIN);
 		}
