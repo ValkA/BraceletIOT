@@ -40,7 +40,7 @@ enum Data_Type {
 	app_location_lon = 11
 };
 
-struct UpdateRecord{
+struct UpdateRecord {
 	Timestamp ts;
 	unsigned long data : (DEFAULT_DATA_BITS - (TS_TIME_BITS + TS_ID_BITS));
 };

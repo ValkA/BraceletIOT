@@ -32,10 +32,12 @@
 #define HC_06_RX 3
 
 //timeout defines in milliseconds
-#define NFC_READ_TIMEOUT 1000
-#define NFC_PAIR_TIMEOUT 7000
-#define BT_DATA_SEND_TIMEOUT 30000
+#define DELAY_BETWEEN_NFC_READS_TIMEOUT 1000
+// #define NFC_PAIR_TIMEOUT 7000
+// #define BT_DATA_SEND_TIMEOUT 30000
 #define TAG_PRESENT_TIMEOUT 500
+#define WAIT_FOR_ACK_TIMEOUT 100
+#define MAX_REPEATS_WHEN_NO_ACK 2
 
 //Memory defines in bytes
 #define MAX_PAYLOAD_LENGTH 64 //Maximum length of NFC message (chars, since it's a string).
@@ -85,13 +87,25 @@ byte* getPointerStartDigits(byte* payload, uint8_t payloadLength) {
 	return payloadDigitsOnly;
 }
 
-void placeEOLafterDigits(byte* payload,uint8_t payloadLength){
+void placeEOLafterDigits(byte* payload, uint8_t payloadLength) {
 	for (uint8_t i = 0; i < payloadLength; i++) {
 		if (!isdigit(payload[i])) {
 			payload[i] = 0;// null terminator for atoi
 			break;
 		}
 	}
+}
+
+bool resendIfNoAck(LogRecord& newRecord) {
+	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
+		delay(WAIT_FOR_ACK_TIMEOUT);
+		if (bluetoothSerial.read() == '#') {
+			return true;
+		}
+		bluetoothSerial << newRecord;
+		bluetoothSerial.println(); //needed to actually send...
+	}
+	return false;
 }
 
 void readTag(uint16_t timeout) {
@@ -101,7 +115,7 @@ void readTag(uint16_t timeout) {
 		if (!tag.hasNdefMessage()) {
 			playErrorTone(BUZZER_PIN);
 			Serial.println(F("ERROR: No NDEF message!"));
-			delay(NFC_READ_TIMEOUT);
+			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 			return;
 		}
 		else {
@@ -110,13 +124,13 @@ void readTag(uint16_t timeout) {
 			if (recordCount > 1) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: More than 1 record!"));
-				delay(NFC_READ_TIMEOUT);
+				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
 			else if (recordCount == 0) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: No record!"));
-				delay(NFC_READ_TIMEOUT);
+				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
@@ -124,30 +138,40 @@ void readTag(uint16_t timeout) {
 			if (payloadLength > MAX_PAYLOAD_LENGTH) {
 				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: Payload is too large!"));
-				delay(NFC_READ_TIMEOUT);
+				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
 			byte payload[payloadLength + 1];
 			record.getPayload(payload);
 			Data tagData;
 			//remove all non digits before and after first number:
+			//done inplace, to avoid copying the message
 			byte* payloadDigitsOnly = getPointerStartDigits(payload, payloadLength);
 			placeEOLafterDigits(payloadDigitsOnly, payload - payloadDigitsOnly);
 			tagData.tagId = atoi((char*)payloadDigitsOnly);
 
 			//add the tag and send it via bluetooth
-			bluetoothSerial << tags_cont.addNewRecord(tag_scan, tagData);
+			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
+			playNewTagTone(BUZZER_PIN);
+			bluetoothSerial << newRecord;
 			bluetoothSerial.println();//needed to actually send...
+			bool success = resendIfNoAck(newRecord);
+			if (!success) {
+				// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
+				Serial.println(F("ERROR: Did not get ack from Android!"));
+			}
+			else {
+				Serial.println(F("SUCCESS: got ack!"));
+			}
 
 			//for debug
 			Serial.print(F("TagID = "));
 			Serial.println((char*)payloadDigitsOnly);
-			playNewTagTone(BUZZER_PIN);
 			//For memory Debugging:
 			Serial.print(F("Free Memory: "));
 			Serial.println(freeMemory());
 
-			delay(NFC_READ_TIMEOUT);
+			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 		}
 	}
 }

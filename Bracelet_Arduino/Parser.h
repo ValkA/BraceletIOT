@@ -35,7 +35,7 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 	case app_update_data:
 		stream.print(record.data.UpdateRecord.ts.time);
 		stream.print(",");
-			stream.print(record.data.UpdateRecord.ts.id);
+		stream.print(record.data.UpdateRecord.ts.id);
 		stream.print(",");
 		stream.print(record.data.UpdateRecord.data);
 		break;
@@ -85,9 +85,9 @@ bool operator >> (Stream& stream, LogRecord& record) {
 
 	Data data;
 	switch (type) {
-		case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
-					   //I added this temporarily so that we can get debug tags from Serial. TODO: Think of a better solution.
-		     data.tagId = stream.parseInt();
+	case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
+				   //I added this temporarily so that we can get debug tags from Serial. TODO: Think of a better solution.
+		data.tagId = stream.parseInt();
 		break;
 	case mobile_device_id:
 		data.mobileIdData = stream.parseInt();
