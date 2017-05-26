@@ -1,11 +1,11 @@
 # BraceletIOT
 
 # Bluetooth protocol:
-The bracelet reads commands via bluetooth serial with the format <$type,$data>.
+The bracelet reads commands via Bluetooth serial with the format <$type,$data>.
 The following types can be sent to it:
 - <1,Integer> on connection this is the first thing should be sent to the bracelet.
 $data represents a unique number of the phone.
-as an acknowlegment the bracelet will send back its database with the following format:
+as an acknowledgement the bracelet will send back its database with the following format:
 [<$type,$time,$tsid,$data>, <$type,$time,$tsid,$data>, ..., <$type,$time,$tsid,$data>]
 also the format <3,$time,$tsid,$pointer_time,$pointer_tsid,$data> may be in the container,
 which represents an update record (that was added with <3,$time,$tsid,Integer> message from doctor)
@@ -13,7 +13,7 @@ which represents an update record (that was added with <3,$time,$tsid,Integer> m
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
 As an acknowledge bracelet sends # back.
 - <3,$time,$tsid,Integer> - update record [$time,$tsid] with new data (Integer 14bit max)
-- <4,Integer> - adds a record of headquarter communication (such as evacuation notification),
+- <4,Integer> - adds a record of headquarters communication (such as evacuation notification),
 $data can be an ID of something, better ask course staff
 As an acknowledge bracelet sends # back.
 - <5,Integer> - adds a record of blood pressure.
@@ -37,16 +37,17 @@ you will see the location when you will send <1,doctor_id>. the location will be
 for example, [<1,3,0,1><10,32.2343><11,7.23456>]. fields 2 and 3 represent the latitude and longitude.
 
 # Debugging:
-It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of deubgging commands:
+It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of debugging commands:
 - d - print the current database to the Serial.
 - m - print memory information to the Serial (size of free memory, number of records currently stored)
-- <$type,$data> - add a specific record to the Serial. The record would be parsed in the exact same manner as a record sent to the arduino from bluetooth. If the record is not recognized as one of the above legal records, you'll get an error and the record would not be added.
+- <$type,$data> - add a specific record to the Arduino. The record would be parsed in the exact same manner as a record sent to the Arduino from Bluetooth. If the record is not recognized as one of the above legal records, you'll get an error and the record would not be added.
 
-The arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behvior when intefacing through bluetooth, connect the arduino through the serial to see detailed debug messages.
+The Arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behaviour when interfacing through Bluetooth, connect the Arduino through the serial to see detailed debug messages.
 
 # Wiring:
 ![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
 
 # IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
+
 TI Documentation about NFC pairing - http://www.ti.com/lit/an/sloa187a/sloa187a.pdf
