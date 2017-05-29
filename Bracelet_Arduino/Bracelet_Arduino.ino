@@ -108,6 +108,19 @@ bool resendIfNoAck(LogRecord& newRecord) {
 	return false;
 }
 
+void sendRecordBluetooth(LogRecord& newRecord) {
+	bluetoothSerial << newRecord;
+	bluetoothSerial.println();//needed to actually send...
+	bool success = resendIfNoAck(newRecord);
+	if (!success) {
+		// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
+		Serial.println(F("ERROR: Did not get ack from Android!"));
+	}
+	else {
+		Serial.println(F("SUCCESS: got ack!"));
+	}
+}
+
 void readTag(uint16_t timeout) {
 	if (nfc.tagPresent(timeout)) {
 		Serial.print(F("Found tag: "));
@@ -153,16 +166,7 @@ void readTag(uint16_t timeout) {
 			//add the tag and send it via bluetooth
 			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
 			playNewTagTone(BUZZER_PIN);
-			bluetoothSerial << newRecord;
-			bluetoothSerial.println();//needed to actually send...
-			bool success = resendIfNoAck(newRecord);
-			if (!success) {
-				// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
-				Serial.println(F("ERROR: Did not get ack from Android!"));
-			}
-			else {
-				Serial.println(F("SUCCESS: got ack!"));
-			}
+			sendRecordBluetooth(newRecord);
 
 			//for debug
 			Serial.print(F("TagID = "));
@@ -248,6 +252,7 @@ void handleDebugMessage() {
 		if (Serial >> debugRecord) {
 			debugRecord = tags_cont.addNewRecord(debugRecord);
 			recordAddedDebugMessage(debugRecord);
+			sendRecordBluetooth(debugRecord);
 			playNewTagTone(BUZZER_PIN);
 		}
 		else {
