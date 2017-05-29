@@ -13,7 +13,6 @@ static constexpr int CONTAINER_SIZE = 100;
 static constexpr int TS_TIME_BITS = 11;
 static constexpr int TS_ID_BITS = 3;
 static constexpr int TYPE_BITS = 4;
-static constexpr int TAG_DATA_BITS = 16;
 static constexpr int DEFAULT_DATA_BITS = 28;
 
 //Note: This is the maximum factor possible. On Arduino, float = double, and has only 6 digits of precision.
@@ -46,7 +45,7 @@ struct UpdateRecord {
 };
 
 union Data {
-	unsigned long tagId : TAG_DATA_BITS;
+	unsigned long tagId : DEFAULT_DATA_BITS;
 	unsigned long mobileIdData : DEFAULT_DATA_BITS;
 	unsigned long rawData : DEFAULT_DATA_BITS;
 	unsigned long statusData : DEFAULT_DATA_BITS;

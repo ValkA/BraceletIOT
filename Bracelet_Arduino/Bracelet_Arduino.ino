@@ -36,11 +36,18 @@
 // #define NFC_PAIR_TIMEOUT 7000
 // #define BT_DATA_SEND_TIMEOUT 30000
 #define TAG_PRESENT_TIMEOUT 500
-#define WAIT_FOR_ACK_TIMEOUT 100
+#define WAIT_FOR_ACK_TIMEOUT 200
+
 #define MAX_REPEATS_WHEN_NO_ACK 2
 
 //Memory defines in bytes
-#define MAX_PAYLOAD_LENGTH 64 //Maximum length of NFC message (chars, since it's a string).
+#define MAX_PAYLOAD_LENGTH 64 // Maximum length of NFC message (chars, since it's a string).
+//The Maximum length (in chars) of the number that can be stored in an NFC tag:
+#define MAX_TAGID_LENGTH 10 // = ceil(log10(pow(2, DEFAULT_DATA_BITS))) + 1 (for null terminator)
+
+//Buffers (to avoid allocating memory on the stack, which should be avoided as much as possible):
+byte nfcPayloadBuffer[MAX_PAYLOAD_LENGTH] = { 0 };
+char tagIDBuffer[MAX_TAGID_LENGTH] = { 0 };
 
 //Structures
 PN532_SPI pn532spi(SPI, PN532_SS);
@@ -52,7 +59,7 @@ LogsContainer tags_cont;
 void setup(void) {
 	Serial.begin(115200);
 	bluetoothSerial.begin(9600);
-	nfc.begin();
+	nfc.begin(); //todo: change library to add indication whether the init was successful.
 	pinMode(BUZZER_PIN, OUTPUT);
 	Serial.println(F("Setup done..."));
 	playSetupDoneTone(BUZZER_PIN);
@@ -76,55 +83,10 @@ void loop(void) {
 	}
 }
 
-byte* getPointerStartDigits(byte* payload, uint8_t payloadLength) {
-	byte* payloadDigitsOnly = payload;
-	for (uint8_t i = 0; i < payloadLength; i++) {
-		if (isdigit(payload[i])) {
-			payloadDigitsOnly = payloadDigitsOnly + i;
-			break;
-		}
-	}
-	return payloadDigitsOnly;
-}
-
-void placeEOLafterDigits(byte* payload, uint8_t payloadLength) {
-	for (uint8_t i = 0; i < payloadLength; i++) {
-		if (!isdigit(payload[i])) {
-			payload[i] = 0;// null terminator for atoi
-			break;
-		}
-	}
-}
-
-bool resendIfNoAck(LogRecord& newRecord) {
-	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
-		delay(WAIT_FOR_ACK_TIMEOUT);
-		if (bluetoothSerial.read() == '#') {
-			return true;
-		}
-		bluetoothSerial << newRecord;
-		bluetoothSerial.println(); //needed to actually send...
-	}
-	return false;
-}
-
-void sendRecordBluetooth(LogRecord& newRecord) {
-	bluetoothSerial << newRecord;
-	bluetoothSerial.println();//needed to actually send...
-	bool success = resendIfNoAck(newRecord);
-	if (!success) {
-		// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
-		Serial.println(F("ERROR: Did not get ack from Android!"));
-	}
-	else {
-		Serial.println(F("SUCCESS: got ack!"));
-	}
-}
-
 void readTag(uint16_t timeout) {
 	if (nfc.tagPresent(timeout)) {
-		Serial.print(F("Found tag: "));
-		NfcTag tag = nfc.read();
+		Serial.println(F("NFC tag detected."));
+		NfcTag tag = nfc.read(); //todo: change library to handle cases where the read fails.
 		if (!tag.hasNdefMessage()) {
 			playErrorTone(BUZZER_PIN);
 			Serial.println(F("ERROR: No NDEF message!"));
@@ -154,23 +116,29 @@ void readTag(uint16_t timeout) {
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
-			byte payload[payloadLength + 1];
-			record.getPayload(payload);
+
+			record.getPayload(nfcPayloadBuffer);
+
+			if (!extractNum(tagIDBuffer, (char*)nfcPayloadBuffer, payloadLength)) {
+				playErrorTone(BUZZER_PIN);
+				Serial.println(F("ERROR: A number couldnt be extracted from Tag!"));
+				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+				return;
+			}
+
 			Data tagData;
-			//remove all non digits before and after first number:
-			//done inplace, to avoid copying the message
-			byte* payloadDigitsOnly = getPointerStartDigits(payload, payloadLength);
-			placeEOLafterDigits(payloadDigitsOnly, payload - payloadDigitsOnly);
-			tagData.tagId = atoi((char*)payloadDigitsOnly);
+			tagData.tagId = atol((char*)tagIDBuffer);
 
 			//add the tag and send it via bluetooth
 			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
+			recordAddedDebugMessage(newRecord);
 			playNewTagTone(BUZZER_PIN);
 			sendRecordBluetooth(newRecord);
 
-			//for debug
-			Serial.print(F("TagID = "));
-			Serial.println((char*)payloadDigitsOnly);
+			//debugging the payload format:
+			//Serial.print(F("TagID = "));
+			//Serial.println(tagData.tagId);
+
 			//For memory Debugging:
 			Serial.print(F("Free Memory: "));
 			Serial.println(freeMemory());
@@ -180,54 +148,18 @@ void readTag(uint16_t timeout) {
 	}
 }
 
-void recordAddedDebugMessage(const LogRecord& newRecord)
-{
-	Serial.print(F("Added: "));
-	Serial << newRecord;
-	Serial.println();
-}
-
 void handleDoctorMessage(Stream& stream) {
 	LogRecord logRecord;
 	if (stream >> logRecord) {
-		tags_cont.addNewRecord(logRecord.type, logRecord.data);
-		//Serial.print(F("Got Doctor message type "));
-		//Serial.println(logRecord.type);
+		logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
 		recordAddedDebugMessage(logRecord);
 
 		//do stuff for relevant logRecord.type
-		switch (logRecord.type) {
-		case app_command:
-			playBuzzTone(BUZZER_PIN);
-			stream.println("#");//Ack
-			break;
-		case mobile_device_id:
-			playDoctorConnectedTone(BUZZER_PIN);
-			stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
-			break;
-		case app_location_lat:
-			//will beep and send ack after <lon_type, lon>
-			break;
-		case app_location_lon:
-			stream.println("#");//Ack
-			playDoctorMessageTone(BUZZER_PIN);
-			break;
-		default:
-			//just a beep that message was recieved
-			playDoctorMessageTone(BUZZER_PIN);
-			stream.println("#");//Ack
-			break;
-		}
+		respondToRecordType(stream, logRecord);
 	}
 	else {//ERROR, handle it by clearing the buffer until the next '<'
 		playErrorTone(BUZZER_PIN);
 		clearStreamBufferUntilNextMessage(stream);
-	}
-}
-
-void clearStreamBufferUntilNextMessage(Stream& stream) {
-	while (stream.available() && stream.peek() != '<') {
-		stream.read();
 	}
 }
 
@@ -239,7 +171,7 @@ void handleDebugMessage() {
 	case 'd': //print all the tags:
 		Serial << tags_cont;
 		break;
-	case 'm': //print memoory info:
+	case 'm': //print memory info:
 		Serial.print(F("Heap memory left: "));
 		Serial.println(freeMemory());
 		Serial.print(F("DB Size: "));
@@ -252,8 +184,13 @@ void handleDebugMessage() {
 		if (Serial >> debugRecord) {
 			debugRecord = tags_cont.addNewRecord(debugRecord);
 			recordAddedDebugMessage(debugRecord);
-			sendRecordBluetooth(debugRecord);
-			playNewTagTone(BUZZER_PIN);
+			if (debugRecord.type == tag_scan) {
+				playNewTagTone(BUZZER_PIN);
+				sendRecordBluetooth(debugRecord);
+			}
+			else { //if it's a different type of message, a buzzer or new doctor connection for example.
+				respondToRecordType(bluetoothSerial, debugRecord);
+			}
 		}
 		else {
 			playErrorTone(BUZZER_PIN);
@@ -267,3 +204,91 @@ void handleDebugMessage() {
 	clearStreamBufferUntilNextMessage(Serial);
 }
 
+void sendRecordBluetooth(LogRecord& newRecord) {
+	bluetoothSerial << newRecord;
+	bluetoothSerial.println();//needed to actually send...
+	bool success = resendIfNoAck(newRecord);
+	if (!success) {
+		// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
+		Serial.println(F("ERROR: Did not get ack from Android!"));
+	}
+	else {
+		Serial.println(F("SUCCESS: got ack!"));
+	}
+}
+
+bool resendIfNoAck(LogRecord& newRecord) {
+	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
+		delay(WAIT_FOR_ACK_TIMEOUT);
+		if (bluetoothSerial.read() == '#') {
+			return true;
+		}
+		bluetoothSerial << newRecord;
+		bluetoothSerial.println(); //needed to actually send...
+	}
+	return false;
+}
+
+//extracts the first number from the sourceBuffer into the targetBuffer.
+bool extractNum(char* targetBuffer, const char* sourceBuffer, uint8_t sourceLength) {
+	int i = 0, j = 0;
+	for (; i < sourceLength; i++) {
+		if (isDigit(sourceBuffer[i])) {
+			break;
+		}
+	}
+	for (; i < sourceLength; i++) {
+		if (isDigit(sourceBuffer[i])) {
+			targetBuffer[j] = sourceBuffer[i];
+			j++;
+		}
+		else {
+			break;
+		}
+	}
+	if (j == 0) {
+		return false;
+	}
+	else {
+		targetBuffer[j + 1] = 0;
+		return true;
+	}
+}
+
+void recordAddedDebugMessage(const LogRecord& newRecord)
+{
+	Serial.print(F("Added: "));
+	Serial << newRecord;
+	Serial.println();
+}
+
+void respondToRecordType(Stream& stream, LogRecord& logRecord) {
+	switch (logRecord.type) {
+	case app_command:
+		playBuzzTone(BUZZER_PIN);
+		stream.println("#");//Ack
+		break;
+	case mobile_device_id:
+		playDoctorConnectedTone(BUZZER_PIN);
+		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
+		break;
+	case app_location_lat:
+		//will beep and send ack after <lon_type, lon>
+		break;
+	case app_location_lon:
+		stream.println("#");//Ack
+		playDoctorMessageTone(BUZZER_PIN);
+		break;
+	default:
+		//just a beep that message was recieved
+		playDoctorMessageTone(BUZZER_PIN);
+		stream.println("#");//Ack
+		break;
+	}
+}
+
+void clearStreamBufferUntilNextMessage(Stream& stream) {
+	while (stream.available() && stream.peek() != '<') {
+		stream.read();
+	}
+}
