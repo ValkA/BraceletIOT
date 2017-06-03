@@ -1,6 +1,10 @@
 #ifndef _NOTES_H
 #define _NOTES_H
 
+#include <SoftwareSerial.h>
+
+#define DIFFERENT_NOTES_NUM 8
+
 #define NOTE_B0  31
 #define NOTE_C1  33
 #define NOTE_CS1 35
@@ -90,41 +94,280 @@
 #define NOTE_CS8 4435
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
-
-void playErrorTone(int pin) {
-	tone(pin, NOTE_G5, 200);
-	delay(200);
-	tone(pin, NOTE_G4, 200);
-}
-
-void playNewTagTone(int pin) {
-	tone(pin, NOTE_F5, 50);
-	delay(50);
-	tone(pin, NOTE_G5, 50);
-}
-
-void playSetupDoneTone(int pin) {
+//
+void playSetupDoneTone(int pin) { // TurnOnSuccess
 	tone(pin, NOTE_F7, 50);
 	delay(100);
 	tone(pin, NOTE_C7, 50);
 	delay(100);
 	tone(pin, NOTE_D7, 50);
 }
+//
+//
+//
+//void playScanTagSuccessTone(int pin) { // ScanningSuccess
+//	tone(pin, NOTE_F5, 50);
+//	delay(50);
+//	tone(pin, NOTE_G5, 50);
+//}
+//
+//void playScanTafFailedTone(int pin) { //ScanningFailed
+//	tone(pin, NOTE_G5, 200);
+//	delay(200);
+//	tone(pin, NOTE_G4, 200);
+//}
+//
+//void playDoctorConnectedTone(int pin) { //ConnectingSuccess
+//	tone(pin, NOTE_F7, 50);
+//	delay(100);
+//	tone(pin, NOTE_C7, 50);
+//	delay(100);
+//	tone(pin, NOTE_D7, 50);
+//}
+//
+//void playDoctorMessageTone(int pin) { //NewAppMessage
+//	tone(pin, NOTE_F5, 50);
+//}
+//
+//void playBeepFromAppTone(int pin) { //BeepFromApp
+//	tone(pin, NOTE_GS6, 1000);
+//}
+//
+//void playUnknownTagTone(int pin) { //UnknownTag
+//	tone(pin, NOTE_G5, 200);
+//	delay(50);
+//	tone(pin, NOTE_G4, 200);
+//	delay(50);
+//	tone(pin, NOTE_G4, 200);
+//	delay(50);
+//	tone(pin, NOTE_G4, 200);
+//}
 
-void playDoctorConnectedTone(int pin) {
-	tone(pin, NOTE_F7, 50);
-	delay(100);
-	tone(pin, NOTE_C7, 50);
-	delay(100);
-	tone(pin, NOTE_D7, 50);
-}
+enum NoteType {
+	TurnOnSuccess = 0,
+	TurnOnFailed = 1,
+	ScanningSuccess = 2,
+	ScanningFailed = 3,
+	ConnectingSuccess = 4,
+	NewAppMessage = 5,
+	BeepFromApp = 6,
+	UnknownTag = 7	
+};
 
-void playDoctorMessageTone(int pin) {
-	tone(pin, NOTE_F5, 50);
-}
+class Leds {
+	private:
+		uint8_t pinLed1;
+		uint16_t delayLed1On;
+		uint16_t delayLed1Off;
+		uint8_t repeatsLed1;
+		uint8_t pinLed2;
+		uint16_t delayLed2On;
+		uint16_t delayLed2Off;
+		uint8_t repeatsLed2;
+		NoteType type;
+		
+	public:
+    Leds() {};
+		Leds(uint8_t led1, uint16_t delay1on, uint16_t delay1off, uint8_t repeats1, uint8_t led2, uint16_t delay2on, uint16_t delay2off, uint8_t repeats2, NoteType type) {
+			pinMode(led1, OUTPUT);
+			pinMode(led2, OUTPUT);
+			this->pinLed1 = led1;
+			this->delayLed1On = delay1on;
+			this->delayLed1Off = delay1off;
+			this->repeatsLed1 = repeats1;
+			this->pinLed2 = led2;
+			this->delayLed2On = delay2on;
+			this->delayLed2Off = delay2off;
+			this->repeatsLed2 = repeats2;
+			this->type = type;
+		}
+		
+		void updateLed1(uint8_t delayOn, uint8_t delayOff, uint8_t repeats) {
+			this->delayLed1On = delayOn;
+			this->delayLed1Off = delayOff;
+			this->repeatsLed1 = repeats;
+			return;
+		}
+		
+		void updateLed2(uint8_t delayOn, uint8_t delayOff, uint8_t repeats) {
+			this->delayLed2On = delayOn;
+			this->delayLed2Off = delayOff;
+			this->repeatsLed2 = repeats;
+			return;
+		}
+		
+		void blinkLed1(){
+			for (uint8_t i=0; i<repeatsLed1; i++) {
+				digitalWrite(pinLed1, HIGH);
+				delay(delayLed1On);
+				digitalWrite(pinLed1, LOW);
+				delay(delayLed1Off);
+			}
+			digitalWrite(pinLed1, LOW); //For beeing sure the led is turnning off.
+		}
+		
+		void blinkLed2(){
+			for (uint8_t i=0; i<repeatsLed2; i++) {
+				digitalWrite(pinLed2, HIGH);
+         Serial.println(delayLed2On);
+				delay(delayLed2On);
+				digitalWrite(pinLed2, LOW);
+        Serial.println(delayLed2Off);
+				delay(delayLed2Off);
+			}
+			digitalWrite(pinLed2, LOW); //For beeing sure the led is turnning off.
+		}
+		
+		NoteType getNoteTypeForLeds() {
+			return this->type;
+		}
+};
 
-void playBuzzTone(int pin) {
-	tone(pin, NOTE_GS6, 1000);
-}
+class Tone {
+	private:
+		uint8_t pin;
+		uint8_t freq;
+		uint8_t freqParam;
+		uint8_t delayTime;
+		uint8_t repeats;
+    NoteType type;
+		
+	public:
+		Tone() {};
+		Tone(uint8_t pinNumber, uint8_t frequncy, uint8_t freqParamNumber, uint8_t delay, uint8_t repeatsNumber, NoteType type) {
+			this->pin = pinNumber;
+			this->freq = frequncy;
+			this->freqParam = freqParamNumber;
+			this->delayTime = delay;
+			this->repeats = repeatsNumber;
+			this->type = type;
+		}
+		void playTone() {
+			for (uint8_t i=0; i<repeats -1; i++) {
+				tone(pin, freq, freqParam);
+				delay(delayTime);
+			}
+			tone(pin, freq, freqParam);
+		}
+		void updateFrequncy(uint8_t frequncy) {
+			this->freq = frequncy;
+		}
+		void updateFrequncyParam(uint8_t freqParamNumber) {
+			this->freqParam = freqParamNumber;
+		}
+		void updateDelay(uint8_t delay) {
+			this->delayTime = delay;
+		}
+		void updateRepeats(uint8_t repeatsNumber) {
+			this->repeats = repeatsNumber;
+		}		
+		NoteType getNoteTypeForBuzzer() {
+			return this->type;
+		}
+};
+
+class Notes {
+	private:
+		uint8_t buzzerPin;
+		uint8_t led1Pin;
+		uint8_t led2Pin;
+		Tone tonesArray[DIFFERENT_NOTES_NUM];
+		Leds ledsArray[DIFFERENT_NOTES_NUM];
+	public:
+		Notes(uint8_t buzzerPin, uint8_t led1Pin, uint8_t led2Pin) {
+			//Initiate buzzer settings
+			tonesArray[TurnOnSuccess] = Tone(buzzerPin, NOTE_F7, 50, 100, 3, TurnOnSuccess); //pin, freq, freqParam, delay, repeats
+			tonesArray[TurnOnFailed] = Tone(buzzerPin, NOTE_C7, 200, 200, 2, TurnOnFailed); //pin, freq, freqParam, delay, repeats
+			tonesArray[ScanningSuccess] = Tone(buzzerPin, NOTE_F5, 50, 50, 2, ScanningSuccess); //pin, freq, freqParam, delay, repeats
+			tonesArray[ScanningFailed] = Tone(buzzerPin, NOTE_G5, 200, 200, 2, ScanningFailed); //pin, freq, freqParam, delay, repeats
+			tonesArray[ConnectingSuccess] = Tone(buzzerPin, NOTE_C7, 50, 100, 3, ConnectingSuccess); //pin, freq, freqParam, delay, repeats
+			tonesArray[NewAppMessage] = Tone(buzzerPin, NOTE_F5, 50, 0, 1, NewAppMessage); //pin, freq, freqParam, delay, repeats
+			tonesArray[BeepFromApp] = Tone(buzzerPin, NOTE_GS6, 1000, 100, 1, BeepFromApp); //pin, freq, freqParam, delay, repeats
+			tonesArray[UnknownTag] = Tone(buzzerPin, NOTE_G4, 50, 50, 4, UnknownTag); //pin, freq, freqParam, delay, repeats
+			
+			//Initiate leds settings
+			for (uint8_t i=0; i<DIFFERENT_NOTES_NUM; i++) {
+				ledsArray[i] = Leds(led1Pin, 500, 500, 4, led2Pin, 750, 750, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
+			}
+		}
+		
+		void setToneForNote(NoteType typeNumber, uint8_t frequncy, uint8_t freqParam ,uint8_t delay, uint8_t repeats) {
+			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
+			//	Serial.print(F("Type number should be between 0 to "));
+			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				return;
+			}
+			tonesArray[typeNumber].updateFrequncy(frequncy);
+			tonesArray[typeNumber].updateFrequncyParam(freqParam);
+			tonesArray[typeNumber].updateDelay(delay);
+			tonesArray[typeNumber].updateRepeats(repeats);
+		//	Serial.println(F("Tone changed successfully."));
+			return;
+		}
+		
+		void setLed1ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
+			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
+			//	Serial.print(F("Type number should be between 0 to "));
+			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				return;
+			}
+			ledsArray[typeNumber].updateLed1(delayOn, delayOff, repeates);
+		//	Serial.println(F("Led changed successfully."));
+			return;
+		}
+		
+		void setLed2ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
+			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
+			//	Serial.print(F("Type number should be between 0 to "));
+			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				return;
+			}
+			ledsArray[typeNumber].updateLed2(delayOn, delayOff, repeates);
+		//	Serial.println(F("Led changed successfully."));
+			return;
+		}
+		
+		void updateBuzzerPinNumber(uint8_t pinNumber) {
+			this->buzzerPin = pinNumber;
+		}
+		
+		void updateLed1PinNumber(uint8_t pinNumber) {
+			this->led1Pin = pinNumber;
+		}
+		
+		void updateLed2PinNumber(uint8_t pinNumber) {
+			this->led2Pin = pinNumber;
+		}
+		
+		void buzzerPlay(NoteType type) {
+			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
+				if (tonesArray[i].getNoteTypeForBuzzer() == type) {
+					tonesArray[i].playTone();
+					return;
+				}
+			}
+		}
+		
+		void led1Play(NoteType type) {
+			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
+				if (ledsArray[i].getNoteTypeForLeds() == type) {
+					ledsArray[i].blinkLed1();
+					return;
+				}
+			}
+		}
+		
+		void led2Play(NoteType type) {
+			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
+				if (ledsArray[i].getNoteTypeForLeds() == type) {
+					ledsArray[i].blinkLed2();
+					return;
+				}
+			}			
+		}	
+		
+	};
+
+
 
 #endif
