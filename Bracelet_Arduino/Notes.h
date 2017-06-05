@@ -94,54 +94,7 @@
 #define NOTE_CS8 4435
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
-//
-void playSetupDoneTone(int pin) { // TurnOnSuccess
-	tone(pin, NOTE_F7, 50);
-	delay(100);
-	tone(pin, NOTE_C7, 50);
-	delay(100);
-	tone(pin, NOTE_D7, 50);
-}
-//
-//
-//
-//void playScanTagSuccessTone(int pin) { // ScanningSuccess
-//	tone(pin, NOTE_F5, 50);
-//	delay(50);
-//	tone(pin, NOTE_G5, 50);
-//}
-//
-//void playScanTafFailedTone(int pin) { //ScanningFailed
-//	tone(pin, NOTE_G5, 200);
-//	delay(200);
-//	tone(pin, NOTE_G4, 200);
-//}
-//
-//void playDoctorConnectedTone(int pin) { //ConnectingSuccess
-//	tone(pin, NOTE_F7, 50);
-//	delay(100);
-//	tone(pin, NOTE_C7, 50);
-//	delay(100);
-//	tone(pin, NOTE_D7, 50);
-//}
-//
-//void playDoctorMessageTone(int pin) { //NewAppMessage
-//	tone(pin, NOTE_F5, 50);
-//}
-//
-//void playBeepFromAppTone(int pin) { //BeepFromApp
-//	tone(pin, NOTE_GS6, 1000);
-//}
-//
-//void playUnknownTagTone(int pin) { //UnknownTag
-//	tone(pin, NOTE_G5, 200);
-//	delay(50);
-//	tone(pin, NOTE_G4, 200);
-//	delay(50);
-//	tone(pin, NOTE_G4, 200);
-//	delay(50);
-//	tone(pin, NOTE_G4, 200);
-//}
+
 
 enum NoteType {
 	TurnOnSuccess = 0,
@@ -209,10 +162,8 @@ class Leds {
 		void blinkLed2(){
 			for (uint8_t i=0; i<repeatsLed2; i++) {
 				digitalWrite(pinLed2, HIGH);
-         Serial.println(delayLed2On);
 				delay(delayLed2On);
 				digitalWrite(pinLed2, LOW);
-        Serial.println(delayLed2Off);
 				delay(delayLed2Off);
 			}
 			digitalWrite(pinLed2, LOW); //For beeing sure the led is turnning off.
@@ -287,43 +238,43 @@ class Notes {
 			
 			//Initiate leds settings
 			for (uint8_t i=0; i<DIFFERENT_NOTES_NUM; i++) {
-				ledsArray[i] = Leds(led1Pin, 500, 500, 4, led2Pin, 750, 750, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
+				ledsArray[i] = Leds(led1Pin, 500, 500, 2, led2Pin, 750, 750, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
 			}
 		}
 		
 		void setToneForNote(NoteType typeNumber, uint8_t frequncy, uint8_t freqParam ,uint8_t delay, uint8_t repeats) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
-			//	Serial.print(F("Type number should be between 0 to "));
-			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				Serial.print(F("Type number should be between 0 to "));
+				Serial.println(DIFFERENT_NOTES_NUM);
 				return;
 			}
 			tonesArray[typeNumber].updateFrequncy(frequncy);
 			tonesArray[typeNumber].updateFrequncyParam(freqParam);
 			tonesArray[typeNumber].updateDelay(delay);
 			tonesArray[typeNumber].updateRepeats(repeats);
-		//	Serial.println(F("Tone changed successfully."));
+			Serial.println(F("Tone changed successfully."));
 			return;
 		}
 		
 		void setLed1ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
-			//	Serial.print(F("Type number should be between 0 to "));
-			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				Serial.print(F("Type number should be between 0 to "));
+				Serial.println(DIFFERENT_NOTES_NUM);
 				return;
 			}
 			ledsArray[typeNumber].updateLed1(delayOn, delayOff, repeates);
-		//	Serial.println(F("Led changed successfully."));
+			Serial.println(F("Led changed successfully."));
 			return;
 		}
 		
 		void setLed2ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
-			//	Serial.print(F("Type number should be between 0 to "));
-			//	Serial.println(F(DIFFERENT_NOTES_NUM));
+				Serial.print(F("Type number should be between 0 to "));
+				Serial.println(DIFFERENT_NOTES_NUM);
 				return;
 			}
 			ledsArray[typeNumber].updateLed2(delayOn, delayOff, repeates);
-		//	Serial.println(F("Led changed successfully."));
+			Serial.println(F("Led changed successfully."));
 			return;
 		}
 		

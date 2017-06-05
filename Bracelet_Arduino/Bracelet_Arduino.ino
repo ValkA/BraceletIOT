@@ -23,8 +23,8 @@
 
 //pin defines
 #define BUZZER_PIN 9
-#define LED1_PIN 5
-#define LED2_PIN 4
+#define LED1_PIN 5 //for success
+#define LED2_PIN 4 //for error
 #define PN532_SS 10
 #define PN532_MOSI 11
 #define PN532_MISO 12
@@ -64,8 +64,8 @@ void setup(void) {
 	nfc.begin(); //todo: change library to add indication whether the init was successful.
 	pinMode(BUZZER_PIN, OUTPUT);
 	Serial.println(F("Setup done..."));
-	playSetupDoneTone(BUZZER_PIN);
 	note.buzzerPlay(TurnOnSuccess);
+	note.led1Play(TurnOnSuccess);
 	//For memory Debugging:
 	Serial.print(F("Free Memory: "));
 	Serial.println(freeMemory());
@@ -77,6 +77,7 @@ void setup(void) {
  * 3. Checking whether there is a debug message on the Serial buffer.
  */
 void loop(void) {
+
 	readTag(TAG_PRESENT_TIMEOUT);
 	if (bluetoothSerial.available()) {
 		handleDoctorMessage(bluetoothSerial);
@@ -91,8 +92,7 @@ void readTag(uint16_t timeout) {
 		Serial.println(F("NFC tag detected."));
 		NfcTag tag = nfc.read(); //todo: change library to handle cases where the read fails.
 		if (!tag.hasNdefMessage()) {
-//			playErrorTone(BUZZER_PIN);
-			note.buzzerPlay(UnknownTag);
+			note.buzzerPlay(ScanningFailed);
 			Serial.println(F("ERROR: No NDEF message!"));
 			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 			return;
@@ -101,13 +101,13 @@ void readTag(uint16_t timeout) {
 			NdefMessage message = tag.getNdefMessage();
 			uint8_t recordCount = message.getRecordCount();
 			if (recordCount > 1) {
-//				playErrorTone(BUZZER_PIN);
+          note.buzzerPlay(ScanningFailed);
 				Serial.println(F("ERROR: More than 1 record!"));
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
 			else if (recordCount == 0) {
-//				playErrorTone(BUZZER_PIN);
+				note.buzzerPlay(ScanningFailed);
 				Serial.println(F("ERROR: No record!"));
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
@@ -115,7 +115,7 @@ void readTag(uint16_t timeout) {
 			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
 			uint8_t payloadLength = record.getPayloadLength();
 			if (payloadLength > MAX_PAYLOAD_LENGTH) {
-//				playErrorTone(BUZZER_PIN);
+				note.buzzerPlay(ScanningFailed);
 				Serial.println(F("ERROR: Payload is too large!"));
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
@@ -124,7 +124,6 @@ void readTag(uint16_t timeout) {
 			record.getPayload(nfcPayloadBuffer);
 
 			if (!extractNum(tagIDBuffer, (char*)nfcPayloadBuffer, payloadLength)) {
-//				playErrorTone(BUZZER_PIN);
 				Serial.println(F("ERROR: A number couldnt be extracted from Tag!"));
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
@@ -136,8 +135,8 @@ void readTag(uint16_t timeout) {
 			//add the tag and send it via bluetooth
 			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
 			recordAddedDebugMessage(newRecord);
-//			playNewTagTone(BUZZER_PIN);
 			note.buzzerPlay(ScanningSuccess);
+			note.led1Play(ScanningSuccess);
 			sendRecordBluetooth(newRecord);
 
 			//debugging the payload format:
@@ -156,6 +155,8 @@ void readTag(uint16_t timeout) {
 void handleDoctorMessage(Stream& stream) {
 	LogRecord logRecord;
 	if (stream >> logRecord) {
+		note.buzzerPlay(NewAppMessage);
+		note.led1Play(NewAppMessage);
 		logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
 		recordAddedDebugMessage(logRecord);
 
@@ -163,7 +164,6 @@ void handleDoctorMessage(Stream& stream) {
 		respondToRecordType(stream, logRecord);
 	}
 	else {//ERROR, handle it by clearing the buffer until the next '<'
-//		playErrorTone(BUZZER_PIN);
 		clearStreamBufferUntilNextMessage(stream);
 	}
 }
@@ -183,14 +183,15 @@ void handleDebugMessage() {
 		Serial.println(tags_cont.getSize());
 		break;
 	case 'b': //play buzzer:
-//		playBuzzTone(BUZZER_PIN);
+		note.buzzerPlay(BeepFromApp);
 		break;
 	case '<': //add new record manually through the serial:
 		if (Serial >> debugRecord) {
 			debugRecord = tags_cont.addNewRecord(debugRecord);
 			recordAddedDebugMessage(debugRecord);
 			if (debugRecord.type == tag_scan) {
-			//	playNewTagTone(BUZZER_PIN);
+				note.buzzerPlay(ScanningSuccess);
+				note.led1Play(ScanningSuccess);
 				sendRecordBluetooth(debugRecord);
 			}
 			else { //if it's a different type of message, a buzzer or new doctor connection for example.
@@ -198,12 +199,14 @@ void handleDebugMessage() {
 			}
 		}
 		else {
-//			playErrorTone(BUZZER_PIN);
+			note.buzzerPlay(ScanningFailed);
+			note.led2Play(ScanningFailed);
 			Serial.println(F("ERROR: Wrong container format!"));
 		}
 		break;
 	default:
-//		playErrorTone(BUZZER_PIN);
+		note.buzzerPlay(ScanningFailed);
+		note.led2Play(ScanningFailed);
 		Serial.println(F("ERROR: Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
 	}
 	clearStreamBufferUntilNextMessage(Serial);
@@ -271,10 +274,13 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 	switch (logRecord.type) {
 	case app_command:
 //		playBuzzTone(BUZZER_PIN);
+		note.buzzerPlay(BeepFromApp);
 		stream.println("#");//Ack
 		break;
 	case mobile_device_id:
 	//	playDoctorConnectedTone(BUZZER_PIN);
+		note.buzzerPlay(ConnectingSuccess);
+		note.led1Play(ConnectingSuccess);
 		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
 		break;
 	case app_location_lat:
@@ -283,10 +289,14 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 	case app_location_lon:
 		stream.println("#");//Ack
 	//	playDoctorMessageTone(BUZZER_PIN);
+		note.buzzerPlay(NewAppMessage);
+		note.led1Play(NewAppMessage);
 		break;
 	default:
 		//just a beep that message was recieved
 	//	playDoctorMessageTone(BUZZER_PIN);
+		note.buzzerPlay(NewAppMessage);
+		note.led1Play(NewAppMessage);
 		stream.println("#");//Ack
 		break;
 	}
