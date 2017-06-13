@@ -51,3 +51,34 @@ The Arduino also sends debugging information to the Serial during normal operati
 Don't forget to include libraries from "Libraries for IDE" folder
 
 TI Documentation about NFC pairing - http://www.ti.com/lit/an/sloa187a/sloa187a.pdf
+
+# Notes
+You can change the buzzer sound or leds light with bluetooth terminal.
+The notes are configured for different cases and you can change configuration for any type separetlly. The types are:
+  TurnOnSuccess = 0,
+  TurnOnFailed = 1,
+  ScanningSuccess = 2,  
+  ScanningFailed = 3,
+  ConnectingSuccess = 4,
+	NewAppMessage = 5,
+	BeepFromApp = 6,
+	UnknownTag = 7	
+  
+The command should starts with '[' and ends with ']'.
+For change sound insert:
+[0, type, frequncy, freqParam , delay,  repeats]
+
+*"type" between 0-7 as explained above.
+
+For example:
+[0,2,31,50,200,6] - will change the sound for ScanningSuccess.
+
+For change led i insert: (i={1,2})
+[i, type, delayOn,  delayOff,  repeates]
+
+*Delay is in ms.
+
+For example:
+[0,2,500,500, 3] - will change the first/second led blinks for ScanningSuccess.
+
+
