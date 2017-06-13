@@ -77,14 +77,49 @@ void setup(void) {
  * 3. Checking whether there is a debug message on the Serial buffer.
  */
 void loop(void) {
-
 	readTag(TAG_PRESENT_TIMEOUT);
-	if (bluetoothSerial.available()) {
-		handleDoctorMessage(bluetoothSerial);
+	if (bluetoothSerial.available()) {		
+		switch (bluetoothSerial.peek()) {
+			case '[':
+				changeNoteSettings(bluetoothSerial);
+			break;
+			case '<':
+				handleDoctorMessage(bluetoothSerial);
+				break;
+			default:
+			handleDoctorMessage(bluetoothSerial);
+		}		
 	}
 	if (Serial.available()) {
 		handleDebugMessage();
 	}
+}
+
+void changeNoteSettings(Stream& dataString) {		
+	uint8_t command = dataString.parseInt();	
+	NoteType typeNumber =  dataString.parseInt();	
+	uint16_t param1 = dataString.parseInt();	
+	uint16_t param2 = dataString.parseInt();	
+	uint8_t param3 = dataString.parseInt();	
+	uint8_t param4 = dataString.parseInt();	
+	if (dataString.read() != ']') {
+		clearStreamBufferUntilNextMessage(dataString);
+	}
+	switch (command) {
+		case 0: //change buzzer configuration
+			note.setToneForNote(typeNumber, param1, param2, param3, param4); //frequncy, freqParam , delay,  repeats
+			note.buzzerPlay(typeNumber); //play buzzer for hear the changes.
+		break;	
+		case 1: //change led1 configuration
+			note.setLed1ForNote(typeNumber, param1,  param2,  param3); //  delayOn,  delayOff,  repeates
+      note.led1Play(typeNumber); //play led for see the changes
+		break;	
+		case 2: //change led2 configuration
+			note.setLed2ForNote(typeNumber, param1,  param2,  param3); //  delayOn,  delayOff,  repeates
+      note.led2Play(typeNumber); //play led for see the changes
+		break;
+	}
+	return;
 }
 
 void readTag(uint16_t timeout) {
@@ -303,7 +338,7 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 }
 
 void clearStreamBufferUntilNextMessage(Stream& stream) {
-	while (stream.available() && stream.peek() != '<') {
+	while (stream.available() && (stream.peek() != '<' || stream.peek() != '[')) {
 		stream.read();
 	}
 }

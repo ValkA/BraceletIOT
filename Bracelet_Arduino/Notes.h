@@ -95,7 +95,7 @@
 #define NOTE_D8  4699
 #define NOTE_DS8 4978
 
-
+/*Definitions of different cases for play notes(sound or lights)*/
 enum NoteType {
 	TurnOnSuccess = 0,
 	TurnOnFailed = 1,
@@ -107,6 +107,7 @@ enum NoteType {
 	UnknownTag = 7	
 };
 
+/*Configuration of 2 leds. Every led has parameters for controll the blinks*/
 class Leds {
 	private:
 		uint8_t pinLed1;
@@ -174,6 +175,7 @@ class Leds {
 		}
 };
 
+/*Buzzer configuration*/
 class Tone {
 	private:
 		uint8_t pin;
@@ -241,7 +243,8 @@ class Notes {
 				ledsArray[i] = Leds(led1Pin, 500, 500, 2, led2Pin, 750, 750, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
 			}
 		}
-		
+
+    /*Function for changing buzzer configuration.*/
 		void setToneForNote(NoteType typeNumber, uint8_t frequncy, uint8_t freqParam ,uint8_t delay, uint8_t repeats) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
 				Serial.print(F("Type number should be between 0 to "));
@@ -255,7 +258,8 @@ class Notes {
 			Serial.println(F("Tone changed successfully."));
 			return;
 		}
-		
+
+    /*Function for changing led configuration.*/
 		void setLed1ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
 				Serial.print(F("Type number should be between 0 to "));
