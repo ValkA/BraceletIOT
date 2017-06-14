@@ -104,7 +104,7 @@ enum NoteType {
 	ConnectingSuccess = 4,
 	NewAppMessage = 5,
 	BeepFromApp = 6,
-	UnknownTag = 7	
+	UnknownTag = 7
 };
 
 /*Configuration of 2 leds. Every led has parameters for controll the blinks*/
@@ -119,7 +119,7 @@ class Leds {
 		uint16_t delayLed2Off;
 		uint8_t repeatsLed2;
 		NoteType type;
-		
+
 	public:
     Leds() {};
 		Leds(uint8_t led1, uint16_t delay1on, uint16_t delay1off, uint8_t repeats1, uint8_t led2, uint16_t delay2on, uint16_t delay2off, uint8_t repeats2, NoteType type) {
@@ -135,21 +135,21 @@ class Leds {
 			this->repeatsLed2 = repeats2;
 			this->type = type;
 		}
-		
+
 		void updateLed1(uint8_t delayOn, uint8_t delayOff, uint8_t repeats) {
 			this->delayLed1On = delayOn;
 			this->delayLed1Off = delayOff;
 			this->repeatsLed1 = repeats;
 			return;
 		}
-		
+
 		void updateLed2(uint8_t delayOn, uint8_t delayOff, uint8_t repeats) {
 			this->delayLed2On = delayOn;
 			this->delayLed2Off = delayOff;
 			this->repeatsLed2 = repeats;
 			return;
 		}
-		
+
 		void blinkLed1(){
 			for (uint8_t i=0; i<repeatsLed1; i++) {
 				digitalWrite(pinLed1, HIGH);
@@ -159,7 +159,7 @@ class Leds {
 			}
 			digitalWrite(pinLed1, LOW); //For beeing sure the led is turnning off.
 		}
-		
+
 		void blinkLed2(){
 			for (uint8_t i=0; i<repeatsLed2; i++) {
 				digitalWrite(pinLed2, HIGH);
@@ -169,7 +169,7 @@ class Leds {
 			}
 			digitalWrite(pinLed2, LOW); //For beeing sure the led is turnning off.
 		}
-		
+
 		NoteType getNoteTypeForLeds() {
 			return this->type;
 		}
@@ -184,7 +184,7 @@ class Tone {
 		uint8_t delayTime;
 		uint8_t repeats;
     NoteType type;
-		
+
 	public:
 		Tone() {};
 		Tone(uint8_t pinNumber, uint8_t frequncy, uint8_t freqParamNumber, uint8_t delay, uint8_t repeatsNumber, NoteType type) {
@@ -213,7 +213,7 @@ class Tone {
 		}
 		void updateRepeats(uint8_t repeatsNumber) {
 			this->repeats = repeatsNumber;
-		}		
+		}
 		NoteType getNoteTypeForBuzzer() {
 			return this->type;
 		}
@@ -237,10 +237,10 @@ class Notes {
 			tonesArray[NewAppMessage] = Tone(buzzerPin, NOTE_F5, 50, 0, 1, NewAppMessage); //pin, freq, freqParam, delay, repeats
 			tonesArray[BeepFromApp] = Tone(buzzerPin, NOTE_GS6, 1000, 100, 1, BeepFromApp); //pin, freq, freqParam, delay, repeats
 			tonesArray[UnknownTag] = Tone(buzzerPin, NOTE_G4, 50, 50, 4, UnknownTag); //pin, freq, freqParam, delay, repeats
-			
+
 			//Initiate leds settings
 			for (uint8_t i=0; i<DIFFERENT_NOTES_NUM; i++) {
-				ledsArray[i] = Leds(led1Pin, 500, 500, 2, led2Pin, 750, 750, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
+				ledsArray[i] = Leds(led1Pin, 75, 25, 2, led2Pin, 75, 50, 2, i); //led1, delayOn, delayOff, repeates, led2, delayOn, delayOff, repeates,
 			}
 		}
 
@@ -270,7 +270,7 @@ class Notes {
 			Serial.println(F("Led changed successfully."));
 			return;
 		}
-		
+
 		void setLed2ForNote(NoteType typeNumber, uint16_t delayOn, uint16_t delayOff, uint8_t repeates) {
 			if (typeNumber < 0 || typeNumber > DIFFERENT_NOTES_NUM) {
 				Serial.print(F("Type number should be between 0 to "));
@@ -281,19 +281,19 @@ class Notes {
 			Serial.println(F("Led changed successfully."));
 			return;
 		}
-		
+
 		void updateBuzzerPinNumber(uint8_t pinNumber) {
 			this->buzzerPin = pinNumber;
 		}
-		
+
 		void updateLed1PinNumber(uint8_t pinNumber) {
 			this->led1Pin = pinNumber;
 		}
-		
+
 		void updateLed2PinNumber(uint8_t pinNumber) {
 			this->led2Pin = pinNumber;
 		}
-		
+
 		void buzzerPlay(NoteType type) {
 			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
 				if (tonesArray[i].getNoteTypeForBuzzer() == type) {
@@ -302,7 +302,7 @@ class Notes {
 				}
 			}
 		}
-		
+
 		void led1Play(NoteType type) {
 			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
 				if (ledsArray[i].getNoteTypeForLeds() == type) {
@@ -311,16 +311,16 @@ class Notes {
 				}
 			}
 		}
-		
+
 		void led2Play(NoteType type) {
 			for (uint8_t i=0; i< DIFFERENT_NOTES_NUM; i++) {
 				if (ledsArray[i].getNoteTypeForLeds() == type) {
 					ledsArray[i].blinkLed2();
 					return;
 				}
-			}			
-		}	
-		
+			}
+		}
+
 	};
 
 
