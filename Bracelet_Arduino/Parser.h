@@ -48,8 +48,12 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 	case app_command:
 		stream.print(record.data.rawData);
 		break;
-	case app_soldier_status:
-		stream.print(record.data.statusData);
+	case app_delete_data:
+		stream.print(record.data.UpdateRecord.ts.time);
+		stream.print(",");
+		stream.print(record.data.UpdateRecord.ts.id);
+		stream.print(",");
+		stream.print(record.data.UpdateRecord.data);
 		break;
 	case app_location_lat:
 		stream << ((float)record.data.location) / LOCATION_FACTOR;
@@ -111,8 +115,12 @@ bool operator >> (Stream& stream, LogRecord& record) {
 	case app_command:
 		data.rawData = stream.parseInt();
 		break;
-	case app_soldier_status:
-		data.statusData = stream.parseInt();
+	case app_delete_data:
+		data.UpdateRecord.ts.time = stream.parseInt();
+		if (stream.read() != ',') return false;
+		data.UpdateRecord.ts.id = stream.parseInt();
+		if (stream.read() != ',') return false;
+		data.UpdateRecord.data = stream.parseInt();
 		break;
 	case app_location_lat:
 		float lat;

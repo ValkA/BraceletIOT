@@ -33,7 +33,7 @@ enum Data_Type {
 	app_headquarter_communication = 4,
 	blood_pressure = 5,
 	app_command = 6,//buzzer
-	app_soldier_status = 7,
+	app_delete_data = 7,
 	custom = 9,
 	app_location_lat = 10,
 	app_location_lon = 11
