@@ -61,6 +61,9 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 	case app_location_lon:
 		stream << ((float)record.data.location) / LOCATION_FACTOR;
 		break;
+	case app_soldier_status:
+		stream.print(record.data.rawData);
+		break;
 	case custom:
 		stream.print(record.data.rawData);
 		break;
@@ -131,6 +134,9 @@ bool operator >> (Stream& stream, LogRecord& record) {
 		float lon;
 		lon = stream.parseFloat();
 		data.location = (long)(lon * LOCATION_FACTOR);
+		break;
+	case app_soldier_status:
+		data.rawData = stream.parseInt();
 		break;
 	case custom:
 		data.rawData = stream.parseInt();

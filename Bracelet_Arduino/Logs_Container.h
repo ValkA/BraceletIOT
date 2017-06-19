@@ -36,7 +36,8 @@ enum Data_Type {
 	app_delete_data = 7,
 	custom = 9,
 	app_location_lat = 10,
-	app_location_lon = 11
+	app_location_lon = 11,
+	app_soldier_status = 13
 };
 
 struct UpdateRecord {
