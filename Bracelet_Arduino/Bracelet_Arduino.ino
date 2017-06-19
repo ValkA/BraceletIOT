@@ -129,6 +129,7 @@ void readTag(uint16_t timeout) {
 		if (!tag.hasNdefMessage()) {
 			Serial.println(F("ERROR: No NDEF message!"));
 			note.buzzerPlay(ScanningFailed);
+			note.led2Play(ScanningFailed);
 			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 			return;
 		}
@@ -138,12 +139,14 @@ void readTag(uint16_t timeout) {
 			if (recordCount > 1) {
 				Serial.println(F("ERROR: More than 1 record!"));
 				note.buzzerPlay(ScanningFailed);
+				note.led2Play(ScanningFailed);
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
 			else if (recordCount == 0) {
 				Serial.println(F("ERROR: No record!"));
 				note.buzzerPlay(ScanningFailed);
+				note.led2Play(ScanningFailed);
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
@@ -152,6 +155,7 @@ void readTag(uint16_t timeout) {
 			if (payloadLength > MAX_PAYLOAD_LENGTH) {
 				Serial.println(F("ERROR: Payload is too large!"));
 				note.buzzerPlay(ScanningFailed);
+				note.led2Play(ScanningFailed);
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
@@ -161,6 +165,7 @@ void readTag(uint16_t timeout) {
 			if (!extractNum(tagIDBuffer, (char*)nfcPayloadBuffer, payloadLength)) {
 				Serial.println(F("ERROR: A number couldnt be extracted from Tag!"));
 				note.buzzerPlay(ScanningFailed);
+				note.led2Play(ScanningFailed);
 				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 				return;
 			}
