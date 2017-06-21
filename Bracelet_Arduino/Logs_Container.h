@@ -9,6 +9,8 @@
 
 static constexpr int CONTAINER_SIZE = 100;
 
+extern Notes note; //the notes container from Note.h, needed to play buzzer when container is full.
+
 //bit field consts:
 static constexpr int TS_TIME_BITS = 11;
 static constexpr int TS_ID_BITS = 3;
@@ -76,7 +78,8 @@ public:
 	LogRecord addNewRecord(Data_Type type, Data data) {
 		if (size == CONTAINER_SIZE - 1) {
 			Serial.print(F("ERROR: OUT OF MEMORY!"));
-			//todo: add buzzer here.
+			note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
+			note.led2Play(ScanningFailed);
 			return;
 		}
 		LogRecord newTag = LogRecord(type, data);

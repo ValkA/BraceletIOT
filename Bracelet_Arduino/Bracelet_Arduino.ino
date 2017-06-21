@@ -108,15 +108,15 @@ void changeNoteSettings(Stream& dataString) {
 	switch (command) {
 	case 0: //change buzzer configuration
 		note.setToneForNote(typeNumber, param1, param2, param3, param4); //frequncy, freqParam , delay,  repeats
-		note.buzzerPlay(typeNumber); //play buzzer for hear the changes.
+		note.buzzerPlay(typeNumber); //play buzzer to hear the changes.
 		break;
 	case 1: //change led1 configuration
 		note.setLed1ForNote(typeNumber, param1, param2, param3); //  delayOn,  delayOff,  repeates
-		note.led1Play(typeNumber); //play led for see the changes
+		note.led1Play(typeNumber); //play led to see the changes
 		break;
 	case 2: //change led2 configuration
 		note.setLed2ForNote(typeNumber, param1, param2, param3); //  delayOn,  delayOff,  repeates
-		note.led2Play(typeNumber); //play led for see the changes
+		note.led2Play(typeNumber); //play led to see the changes
 		break;
 	}
 	return;
@@ -184,9 +184,12 @@ void readTag(uint16_t timeout) {
 			//Serial.print(F("TagID = "));
 			//Serial.println(tagData.tagId);
 
+			Serial.print(F("DB Size: "));
+			Serial.println(tags_cont.getSize());
+
 			//For memory Debugging:
-			Serial.print(F("Free Memory: "));
-			Serial.println(freeMemory());
+			//Serial.print(F("Free Memory: "));
+			//Serial.println(freeMemory());
 
 			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 		}
@@ -315,12 +318,10 @@ void recordAddedDebugMessage(const LogRecord& newRecord)
 void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 	switch (logRecord.type) {
 	case app_command:
-		//		playBuzzTone(BUZZER_PIN);
 		stream.println("#");//Ack
 		note.buzzerPlay(BeepFromApp);
 		break;
 	case mobile_device_id:
-		//	playDoctorConnectedTone(BUZZER_PIN);
 		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
 		note.buzzerPlay(ConnectingSuccess);
 		note.led1Play(ConnectingSuccess);
@@ -330,13 +331,11 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 		break;
 	case app_location_lon:
 		stream.println("#");//Ack
-	//	playDoctorMessageTone(BUZZER_PIN);
 		note.buzzerPlay(NewAppMessage);
 		note.led1Play(NewAppMessage);
 		break;
 	default:
 		//just a beep that message was recieved
-	//	playDoctorMessageTone(BUZZER_PIN);
 		stream.println("#");//Ack
 		note.buzzerPlay(NewAppMessage);
 		note.led1Play(NewAppMessage);
