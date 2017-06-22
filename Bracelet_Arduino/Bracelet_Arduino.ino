@@ -217,19 +217,15 @@ void handleDebugMessage() {
 		if (Serial >> debugRecord) {
 			if (debugRecord.type != get_db) {
 				debugRecord = tags_cont.addNewRecord(debugRecord);
-				if (!handleRecordError(debugRecord)) {
+				if (handleRecordError(debugRecord)) {
 					return;
 				}
 				recordAddedDebugMessage(debugRecord);
 			}
-			if (debugRecord.type == tag_scan) { //this is not handled in respondToRecordType, because android cant send tags.
-				sendRecordBluetooth(debugRecord);
-				note.buzzerPlay(ScanningSuccess);
-				note.led1Play(ScanningSuccess);
+			if (debugRecord.type == tag_scan) {
+				sendRecordBluetooth(debugRecord); //this is not handled in respondToRecordType.
 			}
-			else { //if it's a different type of message, a buzzer or new doctor connection for example.
-				respondToRecordType(bluetoothSerial, debugRecord);
-			}
+			respondToRecordType(bluetoothSerial, debugRecord);
 		}
 		else {
 			Serial.println(F("ERROR: Wrong container format!"));

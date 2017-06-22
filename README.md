@@ -72,6 +72,8 @@ This format is for the soldier personal number. It's supposed to be in an NFC ta
 
 Notice that in both cases __only the number is scanned by the bracelet__. The following string is completely ignored. It is there __optionally__ so that it could be used in other devices.
 
+The Integer must be smaller than 2^28, which is the maximum number that can be saved in the bracelet (28 bits are stored for each record's data).
+
 # Debugging:
 It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of debugging commands:
 - d - print the current database to the Serial.
