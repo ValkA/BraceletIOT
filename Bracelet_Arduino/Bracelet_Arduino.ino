@@ -127,7 +127,7 @@ void changeNoteSettings(Stream& dataString) {
 //returns true when there is an error
 bool handleRecordError(const LogRecord& record) {
 	if (record.type == record_error) {
-		Serial.print(F("ERROR: OUT OF MEMORY!"));
+		Serial.println(F("ERROR: OUT OF MEMORY!"));
 		note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
 		note.led2Play(ScanningFailed);
 		delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);

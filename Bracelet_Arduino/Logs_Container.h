@@ -75,10 +75,11 @@ private:
 	uint16_t size = 0;
 public:
 	LogRecord addNewRecord(Data_Type type, Data data) {
-		if (size == CONTAINER_SIZE) {
-			return; //will return an error record (type = record_error).
-		}
 		LogRecord newTag = LogRecord(type, data);
+		if (size == CONTAINER_SIZE) {
+			newTag.type = record_error;
+			return newTag; //will return an error record (type = record_error).
+		}
 		if (size > 0) {
 			const LogRecord& last = records[size - 1];
 			if (last.timestamp.time >= newTag.timestamp.time) {
