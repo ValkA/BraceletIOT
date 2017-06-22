@@ -9,8 +9,6 @@
 
 static constexpr int CONTAINER_SIZE = 100;
 
-extern Notes note; //the notes container from Note.h, needed to play buzzer when container is full.
-
 //bit field consts:
 static constexpr int TS_TIME_BITS = 11;
 static constexpr int TS_ID_BITS = 3;
@@ -34,12 +32,13 @@ enum Data_Type {
 	app_update_data = 3,
 	app_headquarter_communication = 4,
 	blood_pressure = 5,
-	app_command = 6,//buzzer
+	app_command = 6, //buzzer
 	app_delete_data = 7,
 	custom = 9,
 	app_location_lat = 10,
 	app_location_lon = 11,
-	app_soldier_status = 13
+	app_soldier_status = 13,
+	record_error = 15 //special type for internal use only.
 };
 
 struct UpdateRecord {
@@ -67,7 +66,9 @@ public:
 		this->type = type;
 		this->data = data;
 	}
-	LogRecord() {}; //This is needed to create the records array.
+	LogRecord() {
+		this->type = record_error;
+	}; //This is needed to create the records array.
 };
 
 class LogsContainer {
@@ -76,11 +77,8 @@ private:
 	uint16_t size = 0;
 public:
 	LogRecord addNewRecord(Data_Type type, Data data) {
-		if (size == CONTAINER_SIZE - 1) {
-			Serial.print(F("ERROR: OUT OF MEMORY!"));
-			note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
-			note.led2Play(ScanningFailed);
-			return;
+		if (size == CONTAINER_SIZE) {
+			return; //will return an error record.
 		}
 		LogRecord newTag = LogRecord(type, data);
 		if (size > 0) {

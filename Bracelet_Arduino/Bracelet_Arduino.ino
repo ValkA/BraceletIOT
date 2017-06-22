@@ -11,15 +11,16 @@
 #include "SPI.h"
 #include "PN532.h"
 #include "PN532_SPI.h"
-#include "NfcAdapter.h"
 #include "Notes.h"
 #include "Parser.h"
 #include "Logs_Container.h"
+#include "TagReader.h"
 
 //deprecated:
 //#include "emulatetag.h"
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
+//#include "NfcAdapter.h"
 
 //pin defines
 #define BUZZER_PIN 9
@@ -34,25 +35,18 @@
 
 //timeout defines in milliseconds
 #define DELAY_BETWEEN_NFC_READS_TIMEOUT 250
-// #define NFC_PAIR_TIMEOUT 7000
-// #define BT_DATA_SEND_TIMEOUT 30000
 #define TAG_PRESENT_TIMEOUT 500
 #define WAIT_FOR_ACK_TIMEOUT 200
 
 #define MAX_REPEATS_WHEN_NO_ACK 2
 
-//Memory defines in bytes
-#define MAX_PAYLOAD_LENGTH 32 // Maximum length of NFC message (chars, since it's a string).
-//The Maximum length (in chars) of the number that can be stored in an NFC tag:
-#define MAX_TAGID_LENGTH 10 // = ceil(log10(pow(2, DEFAULT_DATA_BITS))) + 1 (for null terminator)
-
 //Buffers (to avoid allocating memory on the stack, which should be avoided as much as possible):
-byte nfcPayloadBuffer[MAX_PAYLOAD_LENGTH] = { 0 };
-char tagIDBuffer[MAX_TAGID_LENGTH] = { 0 };
+char tagIDBuffer[TAGID_BUFFER_SIZE] = { 0 };
 
 //Structures
 PN532_SPI pn532spi(SPI, PN532_SS);
-NfcAdapter nfc = NfcAdapter(pn532spi);
+PN532 nfc(pn532spi);
+TagReader nfcReader(nfc);
 SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX);
 LogsContainer tags_cont;
 Notes note = Notes(BUZZER_PIN, LED1_PIN, LED2_PIN);
@@ -61,7 +55,17 @@ Notes note = Notes(BUZZER_PIN, LED1_PIN, LED2_PIN);
 void setup(void) {
 	Serial.begin(115200);
 	bluetoothSerial.begin(9600);
-	nfc.begin(); //todo: change library to add indication whether the init was successful.
+
+	nfc.begin();
+	uint32_t versiondata = nfc.getFirmwareVersion();
+	if (!versiondata) {
+		Serial.print(F("ERROR: No PN53x nfc board!"));
+		note.buzzerPlay(ScanningFailed); //todo: add different sound here.
+		note.led2Play(ScanningFailed);
+		while (1); // halt
+	}
+	nfc.SAMConfig();
+
 	pinMode(BUZZER_PIN, OUTPUT);
 	Serial.println(F("Setup done..."));
 	note.buzzerPlay(TurnOnSuccess);
@@ -108,81 +112,48 @@ void changeNoteSettings(Stream& dataString) {
 	switch (command) {
 	case 0: //change buzzer configuration
 		note.setToneForNote(typeNumber, param1, param2, param3, param4); //frequncy, freqParam , delay,  repeats
-		note.buzzerPlay(typeNumber); //play buzzer to hear the changes.
+		note.buzzerPlay(typeNumber); //plays buzzer to hear the changes.
 		break;
 	case 1: //change led1 configuration
 		note.setLed1ForNote(typeNumber, param1, param2, param3); //  delayOn,  delayOff,  repeates
-		note.led1Play(typeNumber); //play led to see the changes
+		note.led1Play(typeNumber); //plays led to see the changes
 		break;
 	case 2: //change led2 configuration
 		note.setLed2ForNote(typeNumber, param1, param2, param3); //  delayOn,  delayOff,  repeates
-		note.led2Play(typeNumber); //play led to see the changes
+		note.led2Play(typeNumber); //plays led to see the changes
 		break;
 	}
 	return;
 }
 
 void readTag(uint16_t timeout) {
-	if (nfc.tagPresent(timeout)) {
-		Serial.println(F("NFC tag detected."));
-		NfcTag tag = nfc.read(); //todo: change library to handle cases where the read fails.
-		if (!tag.hasNdefMessage()) {
-			Serial.println(F("ERROR: No NDEF message!"));
+	int16_t success;
+	if (nfcReader.tagPresent(timeout)) {
+		success = nfcReader.read(tagIDBuffer, MAX_TAGID_LENGTH + 2);
+		if (success <= 0) {
+			Serial.println(F("ERROR: failed NFC read!"));
 			note.buzzerPlay(ScanningFailed);
 			note.led2Play(ScanningFailed);
 			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 			return;
 		}
 		else {
-			NdefMessage message = tag.getNdefMessage();
-			uint8_t recordCount = message.getRecordCount();
-			if (recordCount > 1) {
-				Serial.println(F("ERROR: More than 1 record!"));
-				note.buzzerPlay(ScanningFailed);
-				note.led2Play(ScanningFailed);
-				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-				return;
-			}
-			else if (recordCount == 0) {
-				Serial.println(F("ERROR: No record!"));
-				note.buzzerPlay(ScanningFailed);
-				note.led2Play(ScanningFailed);
-				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-				return;
-			}
-			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
-			uint8_t payloadLength = record.getPayloadLength();
-			if (payloadLength > MAX_PAYLOAD_LENGTH) {
-				Serial.println(F("ERROR: Payload is too large!"));
-				note.buzzerPlay(ScanningFailed);
-				note.led2Play(ScanningFailed);
-				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-				return;
-			}
-
-			record.getPayload(nfcPayloadBuffer);
-
-			if (!extractNum(tagIDBuffer, (char*)nfcPayloadBuffer, payloadLength)) {
-				Serial.println(F("ERROR: A number couldnt be extracted from Tag!"));
-				note.buzzerPlay(ScanningFailed);
-				note.led2Play(ScanningFailed);
-				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-				return;
-			}
-
 			Data tagData;
 			tagData.tagId = atol((char*)tagIDBuffer);
 
 			//add the tag and send it via bluetooth
 			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
+			if (newRecord.type == record_error) {
+				Serial.print(F("ERROR: OUT OF MEMORY!"));
+				note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
+				note.led2Play(ScanningFailed);
+				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+				return;
+			}
 			recordAddedDebugMessage(newRecord);
 			sendRecordBluetooth(newRecord);
 			note.buzzerPlay(ScanningSuccess);
 			note.led1Play(ScanningSuccess);
-
-			//debugging the payload format:
-			//Serial.print(F("TagID = "));
-			//Serial.println(tagData.tagId);
 
 			Serial.print(F("DB Size: "));
 			Serial.println(tags_cont.getSize());
@@ -192,9 +163,85 @@ void readTag(uint16_t timeout) {
 			//Serial.println(freeMemory());
 
 			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+			return;
 		}
 	}
 }
+
+//old method
+//void readTag(uint16_t timeout) {
+//	if (nfc.tagPresent(timeout)) {
+//		Serial.println(F("NFC tag detected."));
+//		NfcTag tag = nfc.read(); //todo: change library to handle cases where the read fails.
+//		if (!tag.hasNdefMessage()) {
+//			Serial.println(F("ERROR: No NDEF message!"));
+//			note.buzzerPlay(ScanningFailed);
+//			note.led2Play(ScanningFailed);
+//			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//			return;
+//		}
+//		else {
+//			NdefMessage message = tag.getNdefMessage();
+//			uint8_t recordCount = message.getRecordCount();
+//			if (recordCount > 1) {
+//				Serial.println(F("ERROR: More than 1 record!"));
+//				note.buzzerPlay(ScanningFailed);
+//				note.led2Play(ScanningFailed);
+//				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//				return;
+//			}
+//			else if (recordCount == 0) {
+//				Serial.println(F("ERROR: No record!"));
+//				note.buzzerPlay(ScanningFailed);
+//				note.led2Play(ScanningFailed);
+//				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//				return;
+//			}
+//			NdefRecord record = message.getRecord(0); //we assume the message is in the 1st record.
+//			uint8_t payloadLength = record.getPayloadLength();
+//			if (payloadLength > MAX_PAYLOAD_LENGTH) {
+//				Serial.println(F("ERROR: Payload is too large!"));
+//				note.buzzerPlay(ScanningFailed);
+//				note.led2Play(ScanningFailed);
+//				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//				return;
+//			}
+//
+//			record.getPayload(nfcPayloadBuffer);
+//
+//			if (!extractNum(tagIDBuffer, (char*)nfcPayloadBuffer, payloadLength)) {
+//				Serial.println(F("ERROR: A number couldnt be extracted from Tag!"));
+//				note.buzzerPlay(ScanningFailed);
+//				note.led2Play(ScanningFailed);
+//				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//				return;
+//			}
+//
+//			Data tagData;
+//			tagData.tagId = atol((char*)tagIDBuffer);
+//
+//			//add the tag and send it via bluetooth
+//			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
+//			recordAddedDebugMessage(newRecord);
+//			sendRecordBluetooth(newRecord);
+//			note.buzzerPlay(ScanningSuccess);
+//			note.led1Play(ScanningSuccess);
+//
+//			//debugging the payload format:
+//			//Serial.print(F("TagID = "));
+//			//Serial.println(tagData.tagId);
+//
+//			Serial.print(F("DB Size: "));
+//			Serial.println(tags_cont.getSize());
+//
+//			//For memory Debugging:
+//			//Serial.print(F("Free Memory: "));
+//			//Serial.println(freeMemory());
+//
+//			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+//		}
+//	}
+//}
 
 void handleDoctorMessage(Stream& stream) {
 	LogRecord logRecord;
@@ -280,32 +327,6 @@ bool resendIfNoAck(LogRecord& newRecord) {
 		bluetoothSerial.println(); //needed to actually send...
 	}
 	return false;
-}
-
-//extracts the first number from the sourceBuffer into the targetBuffer.
-bool extractNum(char* targetBuffer, const char* sourceBuffer, uint8_t sourceLength) {
-	int i = 0, j = 0;
-	for (; i < sourceLength; i++) {
-		if (isDigit(sourceBuffer[i])) {
-			break;
-		}
-	}
-	for (; i < sourceLength; i++) {
-		if (isDigit(sourceBuffer[i])) {
-			targetBuffer[j] = sourceBuffer[i];
-			j++;
-		}
-		else {
-			break;
-		}
-	}
-	if (j == 0) {
-		return false;
-	}
-	else {
-		targetBuffer[j + 1] = 0;
-		return true;
-	}
 }
 
 void recordAddedDebugMessage(const LogRecord& newRecord)
