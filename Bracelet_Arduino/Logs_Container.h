@@ -36,6 +36,7 @@ enum Data_Type {
 	app_location_lat = 10,
 	app_location_lon = 11,
 	app_soldier_status = 13,
+	get_db = 14, //this type is used for sync. It is not recorded in the DB.
 	record_error = 15 //special type for internal use only.
 };
 

@@ -170,11 +170,12 @@ void readTag(uint16_t timeout) {
 void handleDoctorMessage(Stream& stream) {
 	LogRecord logRecord;
 	if (stream >> logRecord) {
-		logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
-		if (!handleRecordError(logRecord)) {
-			recordAddedDebugMessage(logRecord);
+		if (logRecord.type != get_db) {
+			logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
+			if (!handleRecordError(logRecord)) {
+				recordAddedDebugMessage(logRecord);
+			}
 		}
-
 		//do stuff for relevant logRecord.type
 		respondToRecordType(stream, logRecord);
 
@@ -204,12 +205,14 @@ void handleDebugMessage() {
 		break;
 	case '<': //add new record manually through the serial:
 		if (Serial >> debugRecord) {
-			debugRecord = tags_cont.addNewRecord(debugRecord);
-			if (handleRecordError(debugRecord)) {
-				return;
+			if (debugRecord.type != get_db) {
+				debugRecord = tags_cont.addNewRecord(debugRecord);
+				if (!handleRecordError(debugRecord)) {
+					return;
+				}
+				recordAddedDebugMessage(debugRecord);
 			}
-			recordAddedDebugMessage(debugRecord);
-			if (debugRecord.type == tag_scan) {
+			if (debugRecord.type == tag_scan) { //this is not handled in respondToRecordType, because android cant send tags.
 				sendRecordBluetooth(debugRecord);
 				note.buzzerPlay(ScanningSuccess);
 				note.led1Play(ScanningSuccess);
@@ -251,7 +254,7 @@ bool resendIfNoAck(LogRecord& newRecord) {
 			return true;
 		}
 		bluetoothSerial << newRecord;
-		bluetoothSerial.println(); //needed to actually send...
+		bluetoothSerial.println();
 	}
 	return false;
 }
@@ -284,6 +287,9 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 		break;
 	case record_error:
 		stream.println("!");//Error (probably memory full)
+		break;
+	case get_db:
+		stream << tags_cont;
 		break;
 	default:
 		//just a beep that message was recieved

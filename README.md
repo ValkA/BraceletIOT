@@ -13,6 +13,7 @@ which represents an update record (that was added with <3,$time,$tsid,Integer> m
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
 As an acknowledge bracelet sends # back.
 - <3,$time,$tsid,Integer> - update record [$time,$tsid] with new data (Integer 14bit max)
+As an acknowledge bracelet sends # back.
 - <4,Integer> - adds a record of headquarters communication (such as evacuation notification),
 $data can be an ID of something, better ask course staff
 As an acknowledge bracelet sends # back.
@@ -23,23 +24,28 @@ As an acknowledge bracelet sends # back.
 $data has no meaning, but should be some kind of Integer.
 0 can be put there.
 As an acknowledge bracelet sends # back.
-- <13,Integer> - adds soldier status (severity of injury)
-$data is id of the status
-As an acknowledge bracelet sends # back.
-- <15,Integer> - adds a custom record
+- <13,Integer> - adds soldier status (severity of injury).
+$data is id of the status.
 As an acknowledge bracelet sends # back.
 
 For example, the command <1,123> will add a record into the bracelet that represents a new connection by a phone that is represented by the number 123. As a response you will get the database.
+
+If there wasn't enough memory to add a record, __the bracelet will send '!' back__, instead of '#'.
 
 - LOCATION:
 To register location you should send <10,(double/float)latitude><11,(double/float)longitude>
 you will see the location when you will send <1,doctor_id>. the location will be among the tags in the container.
 for example, [<1,3,0,1><10,32.2343><11,7.23456>]. fields 2 and 3 represent the latitude and longitude.
 
+- SYNC:
+- <14,Integer> - a special record that can be used to keep the Android and the Bracelet in sync.
+When the Bracelet receives this record, it sends the entire database back, but __does not place this record in it's database__. This allows this record to be sent periodically from Android to the Bracelet to make sure they are both in sync (for example, every 30 seconds).
+Similar to <6, Integer> the $data here has no meaning, but should be some kind of Integer.
+
 # Debugging:
 It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of debugging commands:
 - d - print the current database to the Serial.
-- m - print memory information to the Serial (size of free memory, number of records currently stored)
+- m - print memory information to the Serial (number of records currently stored)
 - <$type,$data> - add a specific record to the Arduino. The record would be parsed in the exact same manner as a record sent to the Arduino from Bluetooth. If the record is not recognized as one of the above legal records, you'll get an error and the record would not be added.
 
 The Arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behaviour when interfacing through Bluetooth, connect the Arduino through the serial to see detailed debug messages.
@@ -53,8 +59,8 @@ Don't forget to include libraries from "Libraries for IDE" folder
 TI Documentation about NFC pairing - http://www.ti.com/lit/an/sloa187a/sloa187a.pdf
 
 # Notes
-You can change the buzzer sound or leds light with bluetooth terminal.
-The notes are configured for different cases and you can change configuration for any type separetlly. The types are:
+You can change the buzzer sound or leds light with Bluetooth terminal.
+The notes are configured for different cases and you can change configuration for any type separately. The types are:
   TurnOnSuccess = 0,
   TurnOnFailed = 1,
   ScanningSuccess = 2,  
@@ -66,7 +72,7 @@ The notes are configured for different cases and you can change configuration fo
   
 The command should starts with '[' and ends with ']'.
 For change sound insert:
-[0, type, frequncy, freqParam , delay,  repeats]
+[0, type, frequency, freqParam , delay,  repeats]
 
 *"type" between 0-7 as explained above.
 
@@ -74,7 +80,7 @@ For example:
 [0,2,31,50,200,6] - will change the sound for ScanningSuccess.
 
 For change led i insert: (i={1,2})
-[i, type, delayOn,  delayOff,  repeates]
+[i, type, delayOn,  delayOff,  repeats]
 
 *Delay is in ms.
 

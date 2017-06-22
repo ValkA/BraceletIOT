@@ -141,6 +141,10 @@ bool operator >> (Stream& stream, LogRecord& record) {
 	case custom:
 		data.rawData = stream.parseInt();
 		break;
+	case get_db:
+		//No need to do anything, nothing is saved on the device.
+		stream.parseInt(); //just removing it from the stream;
+		break;
 	default:
 		return false;
 		break;
