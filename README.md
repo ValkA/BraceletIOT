@@ -25,7 +25,7 @@ $data has no meaning, but should be some kind of Integer. 0 can be put there.
 
 - <7, ... > - delete record. todo: add exact description.
 
-- <8,Integer> - adds soliderID record. $data should contain the soldier's personal number.
+- <8,Integer> - adds soldierID record. $data should contain the soldier's personal number.
 
 - <13,Integer> - adds soldier status (severity of injury).
 $data is id of the status.
