@@ -4,7 +4,6 @@
  Author:	Michael
 */
 
-#include <MemoryFree.h>
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
@@ -21,6 +20,7 @@
 //#include "Known_Tags_Container.h"
 //#include "NFCPairingProtocol.h"
 //#include "NfcAdapter.h"
+//#include <MemoryFree.h>
 
 //pin defines
 #define BUZZER_PIN 9
@@ -70,10 +70,8 @@ void setup(void) {
 	Serial.println(F("Setup done..."));
 	note.buzzerPlay(TurnOnSuccess);
 	note.led1Play(TurnOnSuccess);
-	//For memory Debugging:
-	Serial.print(F("Free Memory: "));
-	Serial.println(freeMemory());
 }
+
 /*
  * The loop cycles through 3 phases:
  * 1. Waiting for tag on the NFC reader (longest phase, exact time is determined by TAG_PRESENT_TIMEOUT)
@@ -126,6 +124,18 @@ void changeNoteSettings(Stream& dataString) {
 	return;
 }
 
+//returns true when there is an error
+bool handleRecordError(const LogRecord& record) {
+	if (record.type == record_error) {
+		Serial.print(F("ERROR: OUT OF MEMORY!"));
+		note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
+		note.led2Play(ScanningFailed);
+		delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+		return true;
+	}
+	return false;
+}
+
 void readTag(uint16_t timeout) {
 	int16_t success;
 	if (nfcReader.tagPresent(timeout)) {
@@ -134,8 +144,6 @@ void readTag(uint16_t timeout) {
 			Serial.println(F("ERROR: failed NFC read!"));
 			note.buzzerPlay(ScanningFailed);
 			note.led2Play(ScanningFailed);
-			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-			return;
 		}
 		else {
 			Data tagData;
@@ -143,11 +151,7 @@ void readTag(uint16_t timeout) {
 
 			//add the tag and send it via bluetooth
 			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
-			if (newRecord.type == record_error) {
-				Serial.print(F("ERROR: OUT OF MEMORY!"));
-				note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
-				note.led2Play(ScanningFailed);
-				delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+			if (handleRecordError(newRecord)) {
 				return;
 			}
 			recordAddedDebugMessage(newRecord);
@@ -157,14 +161,142 @@ void readTag(uint16_t timeout) {
 
 			Serial.print(F("DB Size: "));
 			Serial.println(tags_cont.getSize());
-
-			//For memory Debugging:
-			//Serial.print(F("Free Memory: "));
-			//Serial.println(freeMemory());
-
-			delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
-			return;
 		}
+		delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
+		return;
+	}
+}
+
+void handleDoctorMessage(Stream& stream) {
+	LogRecord logRecord;
+	if (stream >> logRecord) {
+		logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
+		if (!handleRecordError(logRecord)) {
+			recordAddedDebugMessage(logRecord);
+		}
+
+		//do stuff for relevant logRecord.type
+		respondToRecordType(stream, logRecord);
+
+		//This shouldnt be here? Already done in respondToRecordType(...).
+		//note.buzzerPlay(NewAppMessage);
+		//note.led1Play(NewAppMessage);
+	}
+	else {//ERROR, handle it by clearing the buffer until the next '<'
+		clearStreamBufferUntilNextMessage(stream);
+	}
+}
+
+//stuff for debugging from Serial
+void handleDebugMessage() {
+	char c = Serial.peek();
+	LogRecord debugRecord;
+	switch (c) {
+	case 'd': //print all the tags:
+		Serial << tags_cont;
+		break;
+	case 'm': //print memory info:
+		Serial.print(F("DB Size: "));
+		Serial.println(tags_cont.getSize());
+		break;
+	case 'b': //play buzzer:
+		note.buzzerPlay(BeepFromApp);
+		break;
+	case '<': //add new record manually through the serial:
+		if (Serial >> debugRecord) {
+			debugRecord = tags_cont.addNewRecord(debugRecord);
+			if (handleRecordError(debugRecord)) {
+				return;
+			}
+			recordAddedDebugMessage(debugRecord);
+			if (debugRecord.type == tag_scan) {
+				sendRecordBluetooth(debugRecord);
+				note.buzzerPlay(ScanningSuccess);
+				note.led1Play(ScanningSuccess);
+			}
+			else { //if it's a different type of message, a buzzer or new doctor connection for example.
+				respondToRecordType(bluetoothSerial, debugRecord);
+			}
+		}
+		else {
+			Serial.println(F("ERROR: Wrong container format!"));
+			note.buzzerPlay(ScanningFailed);
+			note.led2Play(ScanningFailed);
+		}
+		break;
+	default:
+		Serial.println(F("ERROR: Unknown command!"));
+		note.buzzerPlay(ScanningFailed);
+		note.led2Play(ScanningFailed);
+	}
+	clearStreamBufferUntilNextMessage(Serial);
+}
+
+void sendRecordBluetooth(LogRecord& newRecord) {
+	bluetoothSerial << newRecord;
+	bluetoothSerial.println(); //This is needed because HC-06/05 doesnt send unless it gets /n
+	bool success = resendIfNoAck(newRecord);
+	if (!success) {
+		Serial.println(F("ERROR: Did not get ack from Android!"));
+	}
+	else {
+		Serial.println(F("SUCCESS: got ack!"));
+	}
+}
+
+bool resendIfNoAck(LogRecord& newRecord) {
+	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
+		delay(WAIT_FOR_ACK_TIMEOUT);
+		if (bluetoothSerial.read() == '#') {
+			return true;
+		}
+		bluetoothSerial << newRecord;
+		bluetoothSerial.println(); //needed to actually send...
+	}
+	return false;
+}
+
+void recordAddedDebugMessage(const LogRecord& newRecord)
+{
+	Serial.print(F("Added: "));
+	Serial << newRecord;
+	Serial.println();
+}
+
+void respondToRecordType(Stream& stream, LogRecord& logRecord) {
+	switch (logRecord.type) {
+	case app_command:
+		stream.println("#");//Ack
+		note.buzzerPlay(BeepFromApp);
+		break;
+	case mobile_device_id:
+		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
+		note.buzzerPlay(ConnectingSuccess);
+		note.led1Play(ConnectingSuccess);
+		break;
+	case app_location_lat:
+		//will beep and send ack after <lon_type, lon>
+		break;
+	case app_location_lon:
+		stream.println("#");//Ack
+		note.buzzerPlay(NewAppMessage);
+		note.led1Play(NewAppMessage);
+		break;
+	case record_error:
+		stream.println("!");//Error (probably memory full)
+		break;
+	default:
+		//just a beep that message was recieved
+		stream.println("#");//Ack
+		note.buzzerPlay(NewAppMessage);
+		note.led1Play(NewAppMessage);
+		break;
+	}
+}
+
+void clearStreamBufferUntilNextMessage(Stream& stream) {
+	while (stream.available() && (stream.peek() != '<' || stream.peek() != '[')) {
+		stream.read();
 	}
 }
 
@@ -242,130 +374,3 @@ void readTag(uint16_t timeout) {
 //		}
 //	}
 //}
-
-void handleDoctorMessage(Stream& stream) {
-	LogRecord logRecord;
-	if (stream >> logRecord) {
-		logRecord = tags_cont.addNewRecord(logRecord.type, logRecord.data);
-		recordAddedDebugMessage(logRecord);
-
-		//do stuff for relevant logRecord.type
-		respondToRecordType(stream, logRecord);
-
-		note.buzzerPlay(NewAppMessage);
-		note.led1Play(NewAppMessage);
-	}
-	else {//ERROR, handle it by clearing the buffer until the next '<'
-		clearStreamBufferUntilNextMessage(stream);
-	}
-}
-
-//stuff for debugging from Serial
-void handleDebugMessage() {
-	char c = Serial.peek();
-	LogRecord debugRecord;
-	switch (c) {
-	case 'd': //print all the tags:
-		Serial << tags_cont;
-		break;
-	case 'm': //print memory info:
-		Serial.print(F("Heap memory left: "));
-		Serial.println(freeMemory());
-		Serial.print(F("DB Size: "));
-		Serial.println(tags_cont.getSize());
-		break;
-	case 'b': //play buzzer:
-		note.buzzerPlay(BeepFromApp);
-		break;
-	case '<': //add new record manually through the serial:
-		if (Serial >> debugRecord) {
-			debugRecord = tags_cont.addNewRecord(debugRecord);
-			recordAddedDebugMessage(debugRecord);
-			if (debugRecord.type == tag_scan) {
-				sendRecordBluetooth(debugRecord);
-				note.buzzerPlay(ScanningSuccess);
-				note.led1Play(ScanningSuccess);
-			}
-			else { //if it's a different type of message, a buzzer or new doctor connection for example.
-				respondToRecordType(bluetoothSerial, debugRecord);
-			}
-		}
-		else {
-			Serial.println(F("ERROR: Wrong container format!"));
-			note.buzzerPlay(ScanningFailed);
-			note.led2Play(ScanningFailed);
-		}
-		break;
-	default:
-		Serial.println(F("ERROR: Unknown command, use 'd' to print LogsContainer or 'm' to see how much memory left"));
-		note.buzzerPlay(ScanningFailed);
-		note.led2Play(ScanningFailed);
-	}
-	clearStreamBufferUntilNextMessage(Serial);
-}
-
-void sendRecordBluetooth(LogRecord& newRecord) {
-	bluetoothSerial << newRecord;
-	bluetoothSerial.println();//needed to actually send...
-	bool success = resendIfNoAck(newRecord);
-	if (!success) {
-		// playErrorTone(BUZZER_PIN); //Should we add an error buzz here?
-		Serial.println(F("ERROR: Did not get ack from Android!"));
-	}
-	else {
-		Serial.println(F("SUCCESS: got ack!"));
-	}
-}
-
-bool resendIfNoAck(LogRecord& newRecord) {
-	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
-		delay(WAIT_FOR_ACK_TIMEOUT);
-		if (bluetoothSerial.read() == '#') {
-			return true;
-		}
-		bluetoothSerial << newRecord;
-		bluetoothSerial.println(); //needed to actually send...
-	}
-	return false;
-}
-
-void recordAddedDebugMessage(const LogRecord& newRecord)
-{
-	Serial.print(F("Added: "));
-	Serial << newRecord;
-	Serial.println();
-}
-
-void respondToRecordType(Stream& stream, LogRecord& logRecord) {
-	switch (logRecord.type) {
-	case app_command:
-		stream.println("#");//Ack
-		note.buzzerPlay(BeepFromApp);
-		break;
-	case mobile_device_id:
-		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
-		note.buzzerPlay(ConnectingSuccess);
-		note.led1Play(ConnectingSuccess);
-		break;
-	case app_location_lat:
-		//will beep and send ack after <lon_type, lon>
-		break;
-	case app_location_lon:
-		stream.println("#");//Ack
-		note.buzzerPlay(NewAppMessage);
-		note.led1Play(NewAppMessage);
-		break;
-	default:
-		//just a beep that message was recieved
-		stream.println("#");//Ack
-		note.buzzerPlay(NewAppMessage);
-		note.led1Play(NewAppMessage);
-		break;
-	}
-}
-
-void clearStreamBufferUntilNextMessage(Stream& stream) {
-	while (stream.available() && (stream.peek() != '<' || stream.peek() != '[')) {
-		stream.read();
-	}
-}

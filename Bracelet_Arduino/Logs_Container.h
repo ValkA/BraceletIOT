@@ -4,8 +4,6 @@
 #define _LOGS_CONTAINER_h
 
 #include <Arduino.h>
-//#include <ArduinoSTL.h>
-//#include <list>
 
 static constexpr int CONTAINER_SIZE = 100;
 
@@ -68,7 +66,7 @@ public:
 	}
 	LogRecord() {
 		this->type = record_error;
-	}; //This is needed to create the records array.
+	}; //This is needed to create the records array, is also used to id error records.
 };
 
 class LogsContainer {
@@ -78,7 +76,7 @@ private:
 public:
 	LogRecord addNewRecord(Data_Type type, Data data) {
 		if (size == CONTAINER_SIZE) {
-			return; //will return an error record.
+			return; //will return an error record (type = record_error).
 		}
 		LogRecord newTag = LogRecord(type, data);
 		if (size > 0) {

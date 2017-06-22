@@ -16,7 +16,6 @@ class TagReader {
 private:
 	PN532& nfc;
 	uint8_t data[16] = { 0 }; //data buffer
-	//char tagIDBuffer[TAGID_BUFFER_SIZE] = { 0 };
 	//extracts the first number from the sourceBuffer into the targetBuffer.
 	bool extractNum(char* targetBuffer, const char* sourceBuffer, uint8_t sourceLength) {
 		int i = 0, j = 0;
