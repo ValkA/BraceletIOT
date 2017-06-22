@@ -10,34 +10,40 @@
 #define MAX_TAGID_LENGTH 10 // = ceil(log10(pow(2, DEFAULT_DATA_BITS))) + 1 (for null terminator)
 #define MIFAREULTRALIGHT_PAGE_SIZE 4
 #define MAX_TAGID_PAGES 3 // = ceil(MAX_TAGID_LENGTH/MIFAREULTRALIGHT_PAGE_SIZE)
-#define TAGID_BUFFER_SIZE MAX_TAGID_PAGES*MIFAREULTRALIGHT_PAGE_SIZE
+#define TAGID_BUFFER_SIZE MAX_TAGID_PAGES*MIFAREULTRALIGHT_PAGE_SIZE + 1
+#define SOLDIER_ID_START_CHAR 'd'
+
+#define DATA_BUFFER_SIZE 16
 
 class TagReader {
 private:
 	PN532& nfc;
-	uint8_t data[16] = { 0 }; //data buffer
+	uint8_t data[DATA_BUFFER_SIZE] = { 0 }; //data buffer
 	//extracts the first number from the sourceBuffer into the targetBuffer.
-	bool extractNum(char* targetBuffer, const char* sourceBuffer, uint8_t sourceLength) {
+	bool extractNum(char* targetBuffer, const char* sourceBuffer, uint8_t targetLength, uint8_t sourceLength) {
 		int i = 0, j = 0;
-		for (; i < sourceLength; i++) {
-			if (isDigit(sourceBuffer[i])) {
+		for (; i < sourceLength - 1; i++) {
+			if (isDigit(sourceBuffer[i]) || sourceBuffer[i] == SOLDIER_ID_START_CHAR) {
 				break;
 			}
 		}
-		for (; i < sourceLength; i++) {
-			if (isDigit(sourceBuffer[i])) {
+		for (; i < sourceLength - 1; i++) {
+			if (isDigit(sourceBuffer[i]) || sourceBuffer[i] == SOLDIER_ID_START_CHAR) {
 				targetBuffer[j] = sourceBuffer[i];
 				j++;
+				if (j == targetLength - 2) {
+					break;
+				}
 			}
 			else {
 				break;
 			}
 		}
-		if (j == 0) {
+		if (j == 0 || (j == 1 && targetBuffer[0] == SOLDIER_ID_START_CHAR)) {
 			return false;
 		}
 		else {
-			targetBuffer[j + 1] = 0;
+			targetBuffer[j] = 0;
 			return true;
 		}
 	}
@@ -55,6 +61,7 @@ public:
 		return success;
 	}
 	//returns the number of chars read.
+	//puts either a number into the buffer, or a number starting with SOLDIER_ID_START_CHAR
 	int16_t read(char* buffer, uint8_t bufferSize) {
 		uint8_t success;
 		uint8_t uidLength;
@@ -96,7 +103,7 @@ public:
 					}
 					count++;
 				}
-				if (extractNum(buffer, (char*)data, bufferSize)) {
+				if (extractNum(buffer, (char*)data, bufferSize, DATA_BUFFER_SIZE)) {
 					return count*MIFAREULTRALIGHT_PAGE_SIZE;
 				}
 				else {

@@ -67,6 +67,9 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 	case custom:
 		stream.print(record.data.rawData);
 		break;
+	case soldier_id:
+		stream.print(record.data.rawData);
+		break;
 	default:
 		stream.print(record.data.rawData);
 		break;
@@ -92,8 +95,7 @@ bool operator >> (Stream& stream, LogRecord& record) {
 
 	Data data;
 	switch (type) {
-	case tag_scan: //tags are recieved via NFC and not via bluetooth and that's why this type should go to default case which is return false
-				   //I added this temporarily so that we can get debug tags from Serial. TODO: Think of a better solution.
+	case tag_scan:
 		data.tagId = stream.parseInt();
 		break;
 	case mobile_device_id:
@@ -144,6 +146,9 @@ bool operator >> (Stream& stream, LogRecord& record) {
 	case get_db:
 		//No need to do anything, nothing is saved on the device.
 		stream.parseInt(); //just removing it from the stream;
+		break;
+	case soldier_id:
+		data.rawData = stream.parseInt();
 		break;
 	default:
 		return false;

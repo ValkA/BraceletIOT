@@ -138,8 +138,9 @@ bool handleRecordError(const LogRecord& record) {
 
 void readTag(uint16_t timeout) {
 	int16_t success;
+	char* pTagIdBuffer = tagIDBuffer;
 	if (nfcReader.tagPresent(timeout)) {
-		success = nfcReader.read(tagIDBuffer, MAX_TAGID_LENGTH + 2);
+		success = nfcReader.read(pTagIdBuffer, TAGID_BUFFER_SIZE);
 		if (success <= 0) {
 			Serial.println(F("ERROR: failed NFC read!"));
 			note.buzzerPlay(ScanningFailed);
@@ -147,10 +148,19 @@ void readTag(uint16_t timeout) {
 		}
 		else {
 			Data tagData;
-			tagData.tagId = atol((char*)tagIDBuffer);
+			Data_Type tagType;
+			if (pTagIdBuffer[0] == SOLDIER_ID_START_CHAR) {
+				pTagIdBuffer = pTagIdBuffer + 1;
+				tagType = soldier_id;
+				tagData.rawData = atol((char*)pTagIdBuffer);
+			}
+			else {
+				tagType = tag_scan;
+				tagData.tagId = atol((char*)pTagIdBuffer);
+			}
 
 			//add the tag and send it via bluetooth
-			LogRecord newRecord = tags_cont.addNewRecord(tag_scan, tagData);
+			LogRecord newRecord = tags_cont.addNewRecord(tagType, tagData);
 			if (handleRecordError(newRecord)) {
 				return;
 			}

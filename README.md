@@ -1,36 +1,39 @@
 # BraceletIOT
 
 # Bluetooth protocol:
-The bracelet reads commands via Bluetooth serial with the format <$type,$data>.
-The following types can be sent to it:
-- <1,Integer> on connection this is the first thing should be sent to the bracelet.
-$data represents a unique number of the phone.
-as an acknowledgement the bracelet will send back its database with the following format:
-[<$type,$time,$tsid,$data>, <$type,$time,$tsid,$data>, ..., <$type,$time,$tsid,$data>]
-also the format <3,$time,$tsid,$pointer_time,$pointer_tsid,$data> may be in the container,
-which represents an update record (that was added with <3,$time,$tsid,Integer> message from doctor)
-(records can be tags, app_data or any other things as defined in this doc https://docs.google.com/document/d/1-qHOoyWK5xLiwJvJ40AK0ONJ1xDmyQk-YbECwnUxzqk/edit)
+The bracelet reads commands via Bluetooth serial in the format <$type,$data>.
+
+After receiving a command, the bracelet sends '#' as an ack. If there wasn't enough memory to add a record, __the bracelet will send '!' back__, instead of '#'.
+
+The following types can be sent to the bracelet:
+
+- <0,Integer> adds a tag scan. In case the doctor wants to add a treatment manually through the phone. 
+$data is the treatment number.
+
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
-As an acknowledge bracelet sends # back.
+
 - <3,$time,$tsid,Integer> - update record [$time,$tsid] with new data (Integer 14bit max)
-As an acknowledge bracelet sends # back.
+
 - <4,Integer> - adds a record of headquarters communication (such as evacuation notification),
-$data can be an ID of something, better ask course staff
-As an acknowledge bracelet sends # back.
+$data can be any kind of Integer.
+
 - <5,Integer> - adds a record of blood pressure.
 $data = blood pressure
-As an acknowledge bracelet sends # back.
+
 - <6,Integer> - Turns on buzzer,
-$data has no meaning, but should be some kind of Integer.
-0 can be put there.
-As an acknowledge bracelet sends # back.
+$data has no meaning, but should be some kind of Integer. 0 can be put there.
+
+- <7, ... > - delete record. todo: add exact description.
+
+- <8,Integer> - adds soliderID record. $data should contain the soldier's personal number.
+
 - <13,Integer> - adds soldier status (severity of injury).
 $data is id of the status.
-As an acknowledge bracelet sends # back.
+
 
 For example, the command <1,123> will add a record into the bracelet that represents a new connection by a phone that is represented by the number 123. As a response you will get the database.
 
-If there wasn't enough memory to add a record, __the bracelet will send '!' back__, instead of '#'.
+#### Special commands:
 
 - LOCATION:
 To register location you should send <10,(double/float)latitude><11,(double/float)longitude>
@@ -38,9 +41,36 @@ you will see the location when you will send <1,doctor_id>. the location will be
 for example, [<1,3,0,1><10,32.2343><11,7.23456>]. fields 2 and 3 represent the latitude and longitude.
 
 - SYNC:
-- <14,Integer> - a special record that can be used to keep the Android and the Bracelet in sync.
-When the Bracelet receives this record, it sends the entire database back, but __does not place this record in it's database__. This allows this record to be sent periodically from Android to the Bracelet to make sure they are both in sync (for example, every 30 seconds).
+<14,Integer> - a special record that can be used to keep the Android and the bracelet in sync.
+When the bracelet receives this record, it sends the entire database back, but __does not place this record in it's database__.
+The format of the database is the same as in <1, Integer>.
+This allows this record to be sent periodically from Android to the bracelet to make sure they are both in sync (for example, every 30 seconds).
 Similar to <6, Integer> the $data here has no meaning, but should be some kind of Integer.
+
+- DOCTOR CONNECTION:
+<1,Integer> on connection this is the first thing should be sent to the bracelet.
+$data represents a unique number of the phone.
+As an acknowledgement the bracelet will send back its database with the following format:
+[<$type,$time,$tsid,$data>, <$type,$time,$tsid,$data>, ..., <$type,$time,$tsid,$data>]
+also the format <3,$time,$tsid,$pointer_time,$pointer_tsid,$data> may be in the container,
+which represents an update record (that was added with <3,$time,$tsid,Integer> message from doctor)
+(records can be tags, app_data or any other things as defined in this doc https://docs.google.com/document/d/1-qHOoyWK5xLiwJvJ40AK0ONJ1xDmyQk-YbECwnUxzqk/edit)
+
+# Tag Format:
+The tags scanned by the bracelet must be in one of the following 2 formats:
+- Integer String
+
+For example: 50 Optalgin 10mg
+
+This format is used for different treatments. It's supposed to be in an NFC tag attached to the treatment item, to be scanned by the bracelet.
+
+- dInteger String
+
+For example: d1234567 Israel Israeli
+
+This format is for the soldier personal number. It's supposed to be in an NFC tag attached to the soldier's tag (diskit).
+
+Notice that in both cases __only the number is scanned by the bracelet__. The following string is completely ignored. It is there __optionally__ so that it could be used in other devices.
 
 # Debugging:
 It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of debugging commands:
@@ -56,9 +86,7 @@ The Arduino also sends debugging information to the Serial during normal operati
 # IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
 
-TI Documentation about NFC pairing - http://www.ti.com/lit/an/sloa187a/sloa187a.pdf
-
-# Notes
+# Sounds and LEDs
 You can change the buzzer sound or leds light with Bluetooth terminal.
 The notes are configured for different cases and you can change configuration for any type separately. The types are:
   TurnOnSuccess = 0,
