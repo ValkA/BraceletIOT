@@ -29,7 +29,7 @@
 #define PN532_SS 10
 #define PN532_MOSI 11
 #define PN532_MISO 12
-#define PN532_SCK 12
+#define PN532_SCK 13
 #define HC_06_TX 2
 #define HC_06_RX 3
 
@@ -142,7 +142,8 @@ void readTag(uint16_t timeout) {
 	if (nfcReader.tagPresent(timeout)) {
 		success = nfcReader.read(pTagIdBuffer, TAGID_BUFFER_SIZE);
 		if (success <= 0) {
-			Serial.println(F("ERROR: failed NFC read!"));
+			Serial.print(F("ERROR: failed NFC read! "));
+			Serial.println(success);
 			note.buzzerPlay(ScanningFailed);
 			note.led2Play(ScanningFailed);
 		}
