@@ -7,7 +7,7 @@ After receiving a command, the bracelet sends '#' as an ack. If there wasn't eno
 
 The following types can be sent to the bracelet:
 
-- <0,Integer> adds a tag scan. In case the doctor wants to add a treatment manually through the phone. 
+- <0,Integer> adds a tag scan. In case the doctor wants to add a treatment manually through the phone.
 $data is the treatment number.
 
 - <2,Integer> - adds new data (such as temperature measurement by doctor).
@@ -83,7 +83,7 @@ It is possible to send debugging commands to the Arduino through the Serial (phy
 The Arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behaviour when interfacing through Bluetooth, connect the Arduino through the serial to see detailed debug messages.
 
 # Wiring:
-![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
+![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/NewNfcLibraryMethod/bracelet_bb.png)
 
 # IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
@@ -98,8 +98,8 @@ The notes are configured for different cases and you can change configuration fo
   ConnectingSuccess = 4,
 	NewAppMessage = 5,
 	BeepFromApp = 6,
-	UnknownTag = 7	
-  
+	UnknownTag = 7
+
 The command should starts with '[' and ends with ']'.
 For change sound insert:
 [0, type, frequency, freqParam , delay,  repeats]
@@ -116,5 +116,3 @@ For change led i insert: (i={1,2})
 
 For example:
 [0,2,500,500, 3] - will change the first/second led blinks for ScanningSuccess.
-
-
