@@ -83,7 +83,7 @@ It is possible to send debugging commands to the Arduino through the Serial (phy
 The Arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behaviour when interfacing through Bluetooth, connect the Arduino through the serial to see detailed debug messages.
 
 # Wiring:
-![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/NewNfcLibraryMethod/bracelet_bb.png)
+![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
 
 # IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
