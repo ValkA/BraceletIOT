@@ -23,7 +23,7 @@ $data = blood pressure
 - <6,Integer> - Turns on buzzer,
 $data has no meaning, but should be some kind of Integer. 0 can be put there.
 
-- <7, ... > - delete record. todo: add exact description.
+- <7,$time,$tsid,0> - delete record represented by $time,$tsid.
 
 - <8,Integer> - adds soldierID record. $data should contain the soldier's personal number.
 
