@@ -10,8 +10,8 @@ Stream& operator<<(Stream& stream, float val) {
 }
 
 /**
- * send record to stream.
- * output format is <$type,$time,$tsid,$data>
+ * serializes LogRecord to stream.
+ * output format is according to README.md
  */
 Stream& operator<<(Stream& stream, const LogRecord& record) {
 	stream.print(F("<"));
@@ -80,8 +80,9 @@ Stream& operator<<(Stream& stream, const LogRecord& record) {
 }
 
 /**
- * read record from stream, return true iff success.
- * input format is <$type,$data> TODO:add case for edit message type (right now we dont support this type at all)
+ * deserializes LogRecord from stream.
+ * input format is according to README.md
+ * returns true iff success.
  */
 bool operator >> (Stream& stream, LogRecord& record) {
 	if (stream.read() != '<') {
@@ -164,7 +165,7 @@ bool operator >> (Stream& stream, LogRecord& record) {
 }
 
 /**
- * send container to stream.
+ * serializes container to stream.
  */
 Stream& operator<<(Stream& stream, const LogsContainer& container) {
 	stream.print('[');

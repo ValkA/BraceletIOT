@@ -18,11 +18,17 @@ static constexpr int DEFAULT_DATA_BITS = 28;
 //It also must be long, not int, since int on arduino is only 16 bits, which means max is 65,535.
 static constexpr unsigned long LOCATION_FACTOR = 1000000; //10^6
 
+/**
+ * structure to identify when events happened
+ */
 struct Timestamp {
-	unsigned int time : TS_TIME_BITS; //stored in one minute intervals.
-	unsigned int id : TS_ID_BITS; //in case several tags get scanned in the same minute.
+	unsigned int time : TS_TIME_BITS; //stored in one minute intervals (since turn on).
+	unsigned int id : TS_ID_BITS; //we use it to distinguish records with the same minuts.
 };
 
+/**
+ * LogRecord types, used to distinguish between records
+ */
 enum Data_Type {
 	tag_scan = 0,
 	mobile_device_id = 1,
@@ -41,11 +47,18 @@ enum Data_Type {
 	record_error = 15 //special type for internal use only.
 };
 
+/**
+ * type of record that points to other record (with Timestamp) with its new value
+ * we use this record type  because we dont want to delete/update the records directly
+ */
 struct UpdateRecord {
 	Timestamp ts;
 	unsigned long data : (DEFAULT_DATA_BITS - (TS_TIME_BITS + TS_ID_BITS));
 };
 
+/**
+ * union between all data types that can be in a LogRecord
+ */
 union Data {
 	unsigned long tagId : DEFAULT_DATA_BITS;
 	unsigned long mobileIdData : DEFAULT_DATA_BITS;
@@ -55,9 +68,12 @@ union Data {
 	long location : DEFAULT_DATA_BITS;
 };
 
+/**
+ * The LogRecord
+ */
 class LogRecord {
 public:
-	Timestamp timestamp;
+	Timestamp timestamp; //it is a unique field in LogsContainer, we can use it as the ID of the record.
 	Data_Type type : TYPE_BITS;
 	Data data;
 	LogRecord(Data_Type type, Data data) {
@@ -76,6 +92,12 @@ private:
 	LogRecord records[CONTAINER_SIZE];
 	uint16_t size = 0;
 public:
+	/**
+	 * adds a new record into the LogsContainer
+	 * @param  type - type of record
+	 * @param  data - its data
+	 * @returns the created LogRecord with valid timestamp.
+	 */
 	LogRecord addNewRecord(Data_Type type, Data data) {
 		LogRecord newTag = LogRecord(type, data);
 		if (size == CONTAINER_SIZE) {
@@ -100,6 +122,9 @@ public:
 		return newTag;
 	}
 
+	/**
+	 * timestamp isn't copied ! it calculates the current timestamp.
+	 */
 	LogRecord addNewRecord(const LogRecord& newRecord) {
 		return addNewRecord(newRecord.type, newRecord.data);
 	}
@@ -108,40 +133,10 @@ public:
 		return size;
 	}
 
+	/**
+	 * serializer for the Log container
+	 */
 	friend Stream& operator<<(Stream& stream, const LogsContainer& container);
 };
-
-//prints tag in JSON format, in case we need it in the future.
-/*void printTag(Stream & stream, const LogRecord & td) const
-{
-stream.print(F("{\"data\":\""));
-stream.print(td.data.tagId);
-stream.print(F("\",\"ts\":\""));
-stream.print(td.timestamp.time);
-stream.print(F("\",\"tsid\":\""));
-stream.print(td.timestamp.id);
-stream.print(F("\""));
-stream.print('}');
-}*/
-
-//moved the old uid print method to a function in case we need it in the future.
-/*void printUID(Stream & stream, LogRecord &td)
-{
-	stream.print(F("{\"uid\":\""));
-	char hexid[21] = { 0 };
-	for (int i = 0; i < 7; i++) {
-		if (td.uid[i] <= 0x0F) {
-			itoa(td.uid[i], &hexid[i * 3 + 1], 16);
-			hexid[i * 3] = '0';
-		}
-		else if (td.uid[i] <= 0xFF) {
-			itoa(td.uid[i], &hexid[i * 3], 16);
-		} //else error.. cant be coz td.[uid] is a byte
-		hexid[i * 3 + 2] = ' ';
-
-	}
-	hexid[20] = 0;
-	stream.print(hexid);
-}*/
 
 #endif
