@@ -67,20 +67,21 @@ public:
 		uint8_t uidLength;
 		success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, data, &uidLength);
 		if (success) {
-			if (uidLength == 4) { //mifareclassic tag
-				// The data should be in block 4. Did not have this type of tags so this wasnt tested. todo: test.
+			if (uidLength == 4) { //mifareclassic tag - NOT IMPLEMENTED.
+				// The data should be in block 4. Did not have this type of tags so this wasnt implemented.
 				// With this type the blocks should be 16 bytes in length, so there shouldnt be a need to iterate over them.
 				success = nfc.mifareclassic_ReadDataBlock(4, data);
 				if (success)
 				{
 					//Debugging:
-					Serial.println("Reading Block 4:");
-					Serial.println((char*)data);
+					//Serial.println("Reading Block 4:");
+					//Serial.println((char*)data);
 				}
 				else
 				{
 					return ERROR_READ;
 				}
+				// Add extractNum here, same way as in mifareultralight tag 
 			}
 			else if (uidLength == 7) { //mifareultralight tag
 				uint8_t count = 0;

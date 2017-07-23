@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 
+// Maximum number of records that can be stored:
 static constexpr int CONTAINER_SIZE = 100;
 
 //bit field consts:
@@ -19,15 +20,16 @@ static constexpr int DEFAULT_DATA_BITS = 28;
 static constexpr unsigned long LOCATION_FACTOR = 1000000; //10^6
 
 /**
- * structure to identify when events happened
+ * structure to identify when events happened, used as the unique id of each record.
+ * (2 records cant have the same timestamp)
  */
 struct Timestamp {
 	unsigned int time : TS_TIME_BITS; //stored in one minute intervals (since turn on).
-	unsigned int id : TS_ID_BITS; //we use it to distinguish records with the same minuts.
+	unsigned int id : TS_ID_BITS; //used to distinguish records recorded in the same minute.
 };
 
 /**
- * LogRecord types, used to distinguish between records
+ * LogRecord types, used to distinguish between record types
  */
 enum Data_Type {
 	tag_scan = 0,
@@ -48,8 +50,8 @@ enum Data_Type {
 };
 
 /**
- * type of record that points to other record (with Timestamp) with its new value
- * we use this record type  because we dont want to delete/update the records directly
+ * Our objective is to record an update for a record without deleting the original record.
+ * This type of record points to the updated record (using the updated record's unique Timestamp) and contains its new value.
  */
 struct UpdateRecord {
 	Timestamp ts;
@@ -73,7 +75,7 @@ union Data {
  */
 class LogRecord {
 public:
-	Timestamp timestamp; //it is a unique field in LogsContainer, we can use it as the ID of the record.
+	Timestamp timestamp;
 	Data_Type type : TYPE_BITS;
 	Data data;
 	LogRecord(Data_Type type, Data data) {
@@ -123,7 +125,7 @@ public:
 	}
 
 	/**
-	 * timestamp isn't copied ! it calculates the current timestamp.
+	 * The timestamp isn't copied ! it calculates the current timestamp.
 	 */
 	LogRecord addNewRecord(const LogRecord& newRecord) {
 		return addNewRecord(newRecord.type, newRecord.data);

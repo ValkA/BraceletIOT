@@ -41,7 +41,7 @@ char tagIDBuffer[TAGID_BUFFER_SIZE] = { 0 };
 PN532_SPI pn532spi(SPI, PN532_SS);
 PN532 nfc(pn532spi);
 TagReader nfcReader(nfc);
-SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX
+SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX);
 Notes note = Notes(BUZZER_PIN, LED1_PIN, LED2_PIN);
 //the "database"
 LogsContainer tags_cont;
@@ -54,13 +54,13 @@ void setup(void) {
 
 	//init nfc
 	nfc.begin();
-	//sanity check
+	//check that the NFC scanner is connected:
 	uint32_t versiondata = nfc.getFirmwareVersion();
 	if (!versiondata) {
 		Serial.print(F("ERROR: No PN53x nfc board!"));
-		note.buzzerPlay(ScanningFailed); //todo: add different sound here.
+		note.buzzerPlay(ScanningFailed); //Instead of ScanningFailed it's possible to add a special boot failed full buzz here.
 		note.led2Play(ScanningFailed);
-		while (1); // halt
+		while (1); // halt - DOES NOT CONTINUE IF CANT FIND AN NFC SCANNER
 	}
 	nfc.SAMConfig();
 
@@ -128,7 +128,7 @@ void changeNoteSettings(Stream& dataString) {
 bool handleRecordError(const LogRecord& record) {
 	if (record.type == record_error) {
 		Serial.println(F("ERROR: OUT OF MEMORY!"));
-		note.buzzerPlay(ScanningFailed); //todo: Add special memroy full buzz,
+		note.buzzerPlay(ScanningFailed); //Instead of ScanningFailed it's possible to add a special memroy full buzz here.
 		note.led2Play(ScanningFailed);
 		delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 		return true;
@@ -157,13 +157,12 @@ void readTag(uint16_t timeout) {
 		else {
 			Data tagData;
 			Data_Type tagType;
-			//its a soldier tag
+			//its a soldier ID tag
 			if (pTagIdBuffer[0] == SOLDIER_ID_START_CHAR) {
 				pTagIdBuffer = pTagIdBuffer + 1;
 				tagType = soldier_id;
 				tagData.rawData = atol((char*)pTagIdBuffer);
-			}//its a medicine tag
-			else {
+			} else { //its a treatment tag
 				tagType = tag_scan;
 				tagData.tagId = atol((char*)pTagIdBuffer);
 			}
@@ -214,6 +213,7 @@ void handleDoctorMessage(Stream& stream) {
 void handleDebugMessage() {
 	char c = Serial.peek();
 	//handle according to message type (its first char)
+	LogRecord debugRecord;
 	switch (c) {
 	case 'd': //print all the tags:
 		Serial << tags_cont;
@@ -227,7 +227,6 @@ void handleDebugMessage() {
 		break;
 	case '<': //add new record manually through the serial:
 		if (Serial >> debugRecord) {
-			LogRecord debugRecord;
 			if (debugRecord.type != get_db) {
 				debugRecord = tags_cont.addNewRecord(debugRecord);
 				if (handleRecordError(debugRecord)) {
@@ -301,7 +300,7 @@ void respondToRecordType(Stream& stream, LogRecord& logRecord) {
 		note.buzzerPlay(BeepFromApp);
 		break;
 	case mobile_device_id:
-		stream << tags_cont;//No need for Ack, we are sending data - should *we* wait for an ack here ?!
+		stream << tags_cont;
 		note.buzzerPlay(ConnectingSuccess);
 		note.led1Play(ConnectingSuccess);
 		break;
