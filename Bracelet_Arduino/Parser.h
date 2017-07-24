@@ -1,10 +1,10 @@
-// JSON_Formatter.h
-
 #ifndef _PARSER_H
 #define _PARSER_H
 
 #include "Logs_Container.h"
 
+// Prints floats into the stream with an accuracy of 6 digits.
+// Used in location type.
 Stream& operator<<(Stream& stream, float val) {
 	stream.print(String(val, 6));
 }

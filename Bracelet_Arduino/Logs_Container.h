@@ -1,5 +1,3 @@
-// NFC_Tags_Container.h
-
 #ifndef _LOGS_CONTAINER_h
 #define _LOGS_CONTAINER_h
 

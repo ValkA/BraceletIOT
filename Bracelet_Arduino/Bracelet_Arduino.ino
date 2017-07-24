@@ -1,15 +1,10 @@
-/*
- Name:		Bracelet_Arduino.ino
- Created:	3/22/2017 11:16:11 PM
- Author:	Michael
-*/
-
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
 #include "SPI.h"
 #include "PN532.h"
 #include "PN532_SPI.h"
+
 #include "Notes.h"
 #include "Parser.h"
 #include "Logs_Container.h"
@@ -17,8 +12,8 @@
 
 //pin defines
 #define BUZZER_PIN 9
-#define LED1_PIN 5 //for success
-#define LED2_PIN 4 //for error
+#define LED1_PIN 5 //success
+#define LED2_PIN 4 //error
 #define PN532_SS 10
 #define PN532_MOSI 11
 #define PN532_MISO 12
@@ -43,7 +38,7 @@ PN532 nfc(pn532spi);
 TagReader nfcReader(nfc);
 SoftwareSerial bluetoothSerial(HC_06_TX, HC_06_RX);
 Notes note = Notes(BUZZER_PIN, LED1_PIN, LED2_PIN);
-//the "database"
+//The Databse
 LogsContainer tags_cont;
 
 
@@ -64,7 +59,7 @@ void setup(void) {
 	}
 	nfc.SAMConfig();
 
-	//init leds and buzzer
+	//init leds and buzzer and play successful boot tone
 	pinMode(BUZZER_PIN, OUTPUT);
 	note.buzzerPlay(TurnOnSuccess);
 	note.led1Play(TurnOnSuccess);
@@ -146,7 +141,7 @@ void readTag(uint16_t timeout) {
 	char* pTagIdBuffer = tagIDBuffer;
 	//busy wait for tag
 	if (nfcReader.tagPresent(timeout)) {
-		//found now read its data
+		//tag found now read its data
 		success = nfcReader.read(pTagIdBuffer, TAGID_BUFFER_SIZE);
 		if (success <= 0) {
 			Serial.print(F("ERROR: failed NFC read! "));
@@ -180,7 +175,7 @@ void readTag(uint16_t timeout) {
 			Serial.print(F("DB Size: "));
 			Serial.println(tags_cont.getSize());
 		}
-		//delay necessary for not reading twice the same NFC Tag
+		//delay necessary to avoid reading the same NFC Tag twice.
 		delay(DELAY_BETWEEN_NFC_READS_TIMEOUT);
 		return;
 	}
@@ -270,9 +265,9 @@ void sendRecordBluetooth(LogRecord& newRecord) {
 }
 
 /**
- * handles acks
+ * handles acks from Android
  * @param  newRecord - the record we send
- * @return           true iff was ack
+ * @return - true iff ack recieved
  */
 bool resendIfNoAck(LogRecord& newRecord) {
 	for (int i = 0; i < MAX_REPEATS_WHEN_NO_ACK; i++) {
