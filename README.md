@@ -1,6 +1,23 @@
-# BraceletIOT
+# Bracelet 101
+![alt tag](https://github.com/ValkA/BraceletIOT/raw/master/image1.jpg)
 
-# Bluetooth protocol:
+This is the repository of "Bracelet 101", a POC of smart bracelet for Medical Corps that is attached to an injured person in order to record meidcal events (i.e injection of morphine, wearing a tourniquet etc...).
+
+The bracelet uses NFC to register events in the field and Bluetooth to communicate later with an Android device that is held by a doctor at hospital or at the battalion aid station.
+
+Each medical treatment has an NFC tag with the id of the treatment and should be registered in the bracelet by holding it near the bracelet before giving the treatment to the injured person.
+
+## Media:
+![alt tag](https://github.com/ValkA/BraceletIOT/raw/master/image2.jpg)
+
+Technion Israel Institute of Technology Facebook page - https://www.facebook.com/Technion.Israel/videos/1805491129468339/
+
+YNet Health article - https://www.ynet.co.il/articles/0,7340,L-4991215,00.html
+
+Israeli Channel 10 article - http://192.118.60.6/radioMP4/2017/07/25/7880181.mp4
+
+
+## Bluetooth protocol:
 The bracelet reads commands via Bluetooth serial in the format <$type,$data>.
 
 After receiving a command, the bracelet sends '#' as an ack. If there wasn't enough memory to add a record, __the bracelet will send '!' back__, instead of '#'.
@@ -56,7 +73,7 @@ also the format <3,$time,$tsid,$pointer_time,$pointer_tsid,$data> may be in the 
 which represents an update record (that was added with <3,$time,$tsid,Integer> message from doctor)
 (records can be tags, app_data or any other things as defined in this doc https://docs.google.com/document/d/1-qHOoyWK5xLiwJvJ40AK0ONJ1xDmyQk-YbECwnUxzqk/edit)
 
-# Tag Format:
+## NFC Protocol (Tag format):
 The tags scanned by the bracelet must be in one of the following 2 formats:
 - Integer String
 
@@ -74,7 +91,7 @@ Notice that in both cases __only the number is scanned by the bracelet__. The fo
 
 The Integer must be smaller than 2^28, which is the maximum number that can be saved in the bracelet (28 bits are stored for each record's data).
 
-# Debugging:
+## Debugging:
 It is possible to send debugging commands to the Arduino through the Serial (physical connection to the PC). There are currently 3 types of debugging commands:
 - d - print the current database to the Serial.
 - m - print memory information to the Serial (number of records currently stored)
@@ -82,13 +99,13 @@ It is possible to send debugging commands to the Arduino through the Serial (phy
 
 The Arduino also sends debugging information to the Serial during normal operation, such as detailed error messages. Therefore, if you encounter unexpected behaviour when interfacing through Bluetooth, connect the Arduino through the serial to see detailed debug messages.
 
-# Wiring:
+## Wiring:
 ![alt tag](https://raw.githubusercontent.com/ValkA/BraceletIOT/master/bracelet_bb.png)
 
-# IDE:
+## IDE:
 Don't forget to include libraries from "Libraries for IDE" folder
 
-# Sounds and LEDs
+## Sounds and LEDs
 You can change the buzzer sound or leds light with Bluetooth terminal.
 The notes are configured for different cases and you can change configuration for any type separately. The types are:
   TurnOnSuccess = 0,
