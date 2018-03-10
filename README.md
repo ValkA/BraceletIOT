@@ -1,7 +1,7 @@
 # Bracelet 101
 ![alt tag](https://github.com/ValkA/BraceletIOT/raw/master/image1.jpg)
 
-This is the repository of "Bracelet 101", a POC of smart bracelet for Medical Corps that is attached to an injured person in order to record meidcal events (i.e injection of morphine, wearing a tourniquet etc...).
+This is the repository of "Bracelet 101", a POC of smart bracelet for Medical Corps that is attached to an injured person in order to record medical events (i.e injection of morphine, wearing a tourniquet etc...).
 
 The bracelet uses NFC to register events in the field and Bluetooth to communicate later with an Android device that is held by a doctor at hospital or at the battalion aid station.
 
