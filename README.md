@@ -10,11 +10,13 @@ Each medical treatment has an NFC tag with the id of the treatment and should be
 ## Media:
 ![alt tag](https://github.com/ValkA/BraceletIOT/raw/master/image2.jpg)
 
-Technion Israel Institute of Technology Facebook page - https://www.facebook.com/Technion.Israel/videos/1805491129468339/
+Israel Hayom article - http://www.israelhayom.co.il/article/565423/
 
 YNet Health article - https://www.ynet.co.il/articles/0,7340,L-4991215,00.html
 
 Israeli Channel 10 article - http://192.118.60.6/radioMP4/2017/07/25/7880181.mp4
+
+Technion Israel Institute of Technology Facebook page - https://www.facebook.com/Technion.Israel/videos/1805491129468339/
 
 
 ## Bluetooth protocol:
